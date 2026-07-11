@@ -102,5 +102,13 @@
   "license": "MIT",
   "sideEffects": [
     "*.css"
-  ]
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Entity-Now/UniLexical.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Entity-Now/UniLexical/issues"
+  },
+  "homepage": "https://github.com/Entity-Now/UniLexical#readme"
 }
