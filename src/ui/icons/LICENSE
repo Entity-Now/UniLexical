@@ -1,0 +1,8 @@
+Material Design Icons (Outlined)
+Source package: @material-design-icons/svg
+https://github.com/marella/material-design-icons
+
+Licensed under the Apache License, Version 2.0
+https://www.apache.org/licenses/LICENSE-2.0
+
+Local copies live in svg/ and are inlined into index.ts for the UniLexical toolbar.

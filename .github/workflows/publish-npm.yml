@@ -1,0 +1,113 @@
+# Publish UniLexical (npm package: unilexical) to the npm registry.
+#
+# Triggers:
+#   - Push a version tag: v1.0.0 / v0.1.0 / v1.2.3-beta.1 …
+#   - Manual workflow_dispatch (optional dry-run)
+#
+# Required repository secret:
+#   NPM_TOKEN  — npm access token with publish permission
+#
+# Recommended flow:
+#   1. Set "version" in package.json (e.g. 1.0.0)
+#   2. Commit, then: git tag v1.0.0 && git push origin v1.0.0
+#   3. This workflow checks out the tag, verifies version matches, builds, publishes
+
+name: Publish npm
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run (npm publish --dry-run)'
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  id-token: write # npm provenance
+
+concurrency:
+  group: publish-npm-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Build & publish
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # On tag push, github.ref is refs/tags/v1.0.0
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          registry-url: 'https://registry.npmjs.org'
+          cache: npm
+
+      - name: Resolve version from tag
+        id: ver
+        run: |
+          if [[ "${{ github.ref }}" == refs/tags/* ]]; then
+            TAG="${GITHUB_REF_NAME}"
+          else
+            # workflow_dispatch on a branch — use package.json version only
+            TAG="v$(node -p "require('./package.json').version")"
+          fi
+          # strip leading v → 1.0.0
+          PKG_VERSION="${TAG#v}"
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+          echo "version=${PKG_VERSION}" >> "$GITHUB_OUTPUT"
+          echo "Resolved tag=${TAG} version=${PKG_VERSION}"
+
+      - name: Assert package.json version matches tag
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          PKG_VERSION="$(node -p "require('./package.json').version")"
+          TAG_VERSION="${{ steps.ver.outputs.version }}"
+          echo "package.json version=${PKG_VERSION}"
+          echo "tag version=${TAG_VERSION}"
+          if [ "$PKG_VERSION" != "$TAG_VERSION" ]; then
+            echo "::error::package.json version (${PKG_VERSION}) does not match git tag v${TAG_VERSION}."
+            echo "Update package.json version, commit, then retag."
+            exit 1
+          fi
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Build package
+        run: npm run build
+
+      - name: Verify dist artifacts
+        run: |
+          test -f dist/index.js
+          test -f dist/index.cjs
+          test -f dist/index.d.ts
+          test -f dist/vue.js
+          test -f dist/react.js
+          test -f dist/style.css
+          test -f dist/preview.css
+          ls -la dist
+
+      - name: Publish to npm
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          if [ "${{ inputs.dry_run }}" = "true" ]; then
+            npm publish --access public --dry-run --provenance
+          else
+            npm publish --access public --provenance
+          fi

@@ -1,0 +1,13 @@
+node_modules
+dist
+*.local
+.DS_Store
+.vite
+*.log
+.turbo
+coverage
+bin
+obj
+
+# Vite demo build (GitHub Pages)
+dist-demo/

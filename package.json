@@ -1,0 +1,106 @@
+{
+  "name": "unilexical",
+  "version": "0.1.0",
+  "description": "Framework-agnostic, Notion-style block rich-text editor powered by Lexical",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./vue": {
+      "types": "./dist/vue.d.ts",
+      "import": "./dist/vue.js",
+      "require": "./dist/vue.cjs"
+    },
+    "./react": {
+      "types": "./dist/react.d.ts",
+      "import": "./dist/react.js",
+      "require": "./dist/react.cjs"
+    },
+    "./style.css": "./dist/style.css",
+    "./preview.css": "./dist/preview.css"
+  },
+  "files": [
+    "dist",
+    "ARCHITECTURE.md",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsup && node scripts/copy-css.mjs",
+    "build:demo": "vite build --config examples/vanilla/vite.config.ts",
+    "prepublishOnly": "npm run typecheck && npm run build",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "icons:gen": "node scripts/gen-icons.mjs",
+    "example:vanilla": "vite examples/vanilla --port 5173",
+    "example:vue": "vite examples/vue --port 5174",
+    "example:react": "vite examples/react --port 5175"
+  },
+  "peerDependencies": {
+    "react": ">=18.0.0",
+    "react-dom": ">=18.0.0",
+    "vue": ">=3.3.0"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    },
+    "react-dom": {
+      "optional": true
+    },
+    "vue": {
+      "optional": true
+    }
+  },
+  "dependencies": {
+    "@lexical/clipboard": "^0.23.1",
+    "@lexical/code": "^0.23.1",
+    "@lexical/history": "^0.23.1",
+    "@lexical/html": "^0.23.1",
+    "@lexical/link": "^0.23.1",
+    "@lexical/list": "^0.23.1",
+    "@lexical/markdown": "^0.23.1",
+    "@lexical/plain-text": "^0.23.1",
+    "@lexical/rich-text": "^0.23.1",
+    "@lexical/selection": "^0.23.1",
+    "@lexical/table": "^0.23.1",
+    "@lexical/utils": "^0.23.1",
+    "@types/hast": "^3.0.5",
+    "lexical": "^0.23.1",
+    "lowlight": "^3.3.0",
+    "motion": "^12.42.2",
+    "tippy.js": "^6.3.7"
+  },
+  "devDependencies": {
+    "@material-design-icons/svg": "^0.14.15",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.4",
+    "@vitejs/plugin-vue": "^5.2.1",
+    "playwright": "^1.61.1",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "tsup": "^8.3.5",
+    "typescript": "^5.7.2",
+    "vite": "^6.0.3",
+    "vue": "^3.5.13"
+  },
+  "keywords": [
+    "lexical",
+    "editor",
+    "rich-text",
+    "notion",
+    "vue",
+    "react",
+    "markdown"
+  ],
+  "license": "MIT",
+  "sideEffects": [
+    "*.css"
+  ]
+}

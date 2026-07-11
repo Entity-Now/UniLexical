@@ -1,0 +1,1064 @@
+/* ─── UniLexical base styles ─────────────────────────────────────────── */
+/* CSS variables on :root so body-level floating UI (slash/overlay) inherits them */
+
+:root {
+  --uni-bg: #ffffff;
+  --uni-fg: #1a1a1a;
+  --uni-muted: #6b7280;
+  --uni-border: #e5e7eb;
+  --uni-hover: #f3f4f6;
+  --uni-active: #e0e7ff;
+  --uni-accent: #4f46e5;
+  --uni-quote-border: #d1d5db;
+  --uni-code-bg: #f3f4f6;
+  --uni-shadow: 0 4px 24px rgba(0, 0, 0, 0.12), 0 1px 3px rgba(0, 0, 0, 0.08);
+  --uni-radius: 8px;
+  --uni-font: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --uni-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+.uni-editor-root {
+  position: relative;
+  font-family: var(--uni-font);
+  color: var(--uni-fg);
+  background: var(--uni-bg);
+  border: 1px solid var(--uni-border);
+  border-radius: var(--uni-radius);
+  overflow: visible; /* allow block overlay to sit in the left gutter */
+}
+
+.uni-editor-shell {
+  min-height: 200px;
+}
+
+.uni-editor-content {
+  position: relative;
+  padding: 12px 16px 48px 56px;
+  outline: none;
+  min-height: 240px;
+  line-height: 1.6;
+  font-size: 16px;
+}
+
+.uni-editor-content:focus {
+  outline: none;
+}
+
+.uni-editor-content[contenteditable='false'] {
+  opacity: 0.85;
+  cursor: default;
+}
+
+/* Placeholder */
+.uni-editor-content:has(.uni-block-wrapper:only-child .uni-paragraph:empty)::before,
+.uni-placeholder-visible::before {
+  content: attr(data-placeholder);
+  color: var(--uni-muted);
+  pointer-events: none;
+  position: absolute;
+  left: 56px;
+  top: 12px;
+  opacity: 0.7;
+}
+
+/* ─── Blocks ─────────────────────────────────────────────────────────── */
+
+.uni-block-wrapper {
+  position: relative;
+  padding: 4px 8px;
+  margin: 1px 0;
+  border-radius: 6px;
+  border: 1.5px solid transparent;
+  box-sizing: border-box;
+  transition:
+    background 0.12s ease,
+    border-color 0.12s ease,
+    box-shadow 0.12s ease;
+}
+
+/* Hover ring — border style as requested */
+.uni-block-wrapper:hover,
+.uni-block-wrapper.uni-block-hover {
+  border-color: rgba(79, 70, 229, 0.35);
+  background: rgba(79, 70, 229, 0.03);
+  box-shadow: 0 0 0 1px rgba(79, 70, 229, 0.06);
+}
+
+/* While dragging a block, suppress hover chrome noise */
+.uni-editor-is-dragging .uni-block-wrapper:hover {
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+}
+
+/* Source block during drag — dashed ring, no permanent grey wash */
+.uni-block-dragging {
+  opacity: 0.5;
+  border-color: var(--uni-accent, #4f46e5) !important;
+  border-style: dashed !important;
+  background: rgba(79, 70, 229, 0.04) !important;
+  box-shadow: none !important;
+  filter: none !important;
+}
+
+/* Drop target highlight */
+.uni-block-drop-target {
+  border-color: rgba(79, 70, 229, 0.45) !important;
+  background: rgba(79, 70, 229, 0.06) !important;
+}
+
+/* Floating drag ghost (clone for setDragImage) */
+.uni-block-drag-ghost {
+  position: fixed !important;
+  top: -10000px !important;
+  left: -10000px !important;
+  z-index: 100000;
+  pointer-events: none;
+  opacity: 0.92;
+  border: 1.5px solid var(--uni-accent, #4f46e5) !important;
+  border-radius: 6px;
+  background: #fff !important;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.18), 0 2px 6px rgba(15, 23, 42, 0.08);
+  padding: 4px 8px;
+  color: var(--uni-fg, #1a1a1a) !important;
+  filter: none !important;
+}
+
+.uni-paragraph {
+  margin: 0;
+  min-height: 1.6em;
+}
+
+.uni-h1 {
+  font-size: 1.875rem;
+  font-weight: 700;
+  margin: 0.4em 0 0.2em;
+  line-height: 1.25;
+  color: var(--uni-fg, #1a1a1a);
+}
+
+.uni-h2 {
+  font-size: 1.5rem;
+  font-weight: 650;
+  margin: 0.35em 0 0.15em;
+  line-height: 1.3;
+  color: var(--uni-fg, #1a1a1a);
+}
+
+.uni-h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0.3em 0 0.1em;
+  line-height: 1.35;
+  color: var(--uni-fg, #1a1a1a);
+}
+
+.uni-h4,
+.uni-h5,
+.uni-h6 {
+  color: var(--uni-fg, #1a1a1a);
+}
+
+.uni-quote {
+  margin: 0.4em 0;
+  padding: 0.25em 0 0.25em 1em;
+  border-left: 3px solid var(--uni-quote-border);
+  color: var(--uni-muted);
+}
+
+.uni-ul,
+.uni-ol {
+  margin: 0.25em 0;
+  padding-left: 1.5em;
+}
+
+.uni-li {
+  margin: 0.15em 0;
+}
+
+.uni-code-block {
+  display: block;
+  font-family: var(--uni-mono);
+  font-size: 0.875rem;
+  background: var(--uni-code-bg);
+  border-radius: 6px;
+  padding: 12px 14px;
+  margin: 0.4em 0;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  tab-size: 2;
+}
+
+.uni-text-bold {
+  font-weight: 700;
+}
+.uni-text-italic {
+  font-style: italic;
+}
+.uni-text-underline {
+  text-decoration: underline;
+}
+.uni-text-strikethrough {
+  text-decoration: line-through;
+}
+.uni-text-underline-strikethrough {
+  text-decoration: underline line-through;
+}
+.uni-text-code {
+  font-family: var(--uni-mono);
+  font-size: 0.9em;
+  background: var(--uni-code-bg);
+  border-radius: 4px;
+  padding: 0.1em 0.35em;
+}
+
+.uni-link {
+  color: var(--uni-accent);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* ─── Images ─────────────────────────────────────────────────────────── */
+
+.uni-image-container,
+.uni-image-wrap,
+.uni-image {
+  display: block;
+  margin: 0.5em 0;
+  max-width: 100%;
+  position: relative;
+  /* Ensure the block takes space even while the image bytes decode */
+  min-height: 1.5em;
+}
+
+.uni-image-el {
+  max-width: 100%;
+  width: auto;
+  height: auto;
+  border-radius: 6px;
+  display: block;
+  object-fit: contain;
+  background: var(--uni-hover, #f3f4f6);
+  /* Tiny placeholders (e.g. 1×1 test pixels) stay tiny; real photos scale */
+  min-width: 0;
+}
+
+.uni-image-loading {
+  position: relative;
+  min-height: 96px;
+  background: var(--uni-hover);
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.uni-image-spinner {
+  color: var(--uni-muted);
+  font-size: 13px;
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.uni-image-error {
+  display: block;
+  padding: 12px 14px;
+  border-radius: 6px;
+  background: #fef2f2;
+  color: #b91c1c;
+  font-size: 13px;
+  border: 1px dashed #fecaca;
+}
+
+/* ─── Toolbar ────────────────────────────────────────────────────────── */
+
+.uni-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--uni-border);
+  background: #fafafa;
+  user-select: none;
+}
+
+.uni-toolbar-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  width: 32px;
+  min-width: 32px;
+  height: 32px;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: #374151;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  /* Avoid transition on class thrash during typing — only hover feels animated */
+  transition: background 0.08s ease, color 0.08s ease;
+  /* Stable paint layer so attribute toggles don't flash the whole bar */
+  contain: layout style;
+}
+
+.uni-toolbar-btn:hover:not(:disabled) {
+  background: var(--uni-hover);
+  color: #111827;
+}
+
+.uni-toolbar-btn-active {
+  background: var(--uni-active) !important;
+  color: var(--uni-accent) !important;
+}
+
+.uni-toolbar-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+/* Material Design toolbar icons (local SVG) */
+.uni-toolbar-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  line-height: 0;
+  pointer-events: none;
+}
+
+.uni-toolbar-icon svg {
+  width: 20px;
+  height: 20px;
+  display: block;
+}
+
+.uni-toolbar-label {
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.uni-toolbar-divider {
+  width: 1px;
+  height: 18px;
+  background: var(--uni-border);
+  margin: 0 4px;
+}
+
+/* ─── Slash menu (body-level floating) ───────────────────────────────── */
+
+.uni-slash-menu {
+  position: fixed;
+  z-index: 10000;
+  min-width: 260px;
+  max-width: 320px;
+  max-height: 320px;
+  overflow-y: auto;
+  /* Solid fallbacks — must not rely on editor-scoped vars alone */
+  background: #ffffff;
+  background: var(--uni-bg, #ffffff);
+  border: 1px solid #e5e7eb;
+  border: 1px solid var(--uni-border, #e5e7eb);
+  border-radius: 10px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.12), 0 1px 3px rgba(0, 0, 0, 0.08);
+  padding: 6px;
+  font-family: var(--uni-font, system-ui, sans-serif);
+  color: #1a1a1a;
+  color: var(--uni-fg, #1a1a1a);
+}
+
+.uni-slash-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 10px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  font-family: inherit;
+  color: inherit;
+}
+
+.uni-slash-menu-item:hover,
+.uni-slash-menu-item-active {
+  background: #f3f4f6;
+  background: var(--uni-hover, #f3f4f6);
+}
+
+.uni-slash-menu-icon {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border: 1px solid var(--uni-border, #e5e7eb);
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #6b7280;
+  color: var(--uni-muted, #6b7280);
+}
+
+.uni-slash-menu-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.uni-slash-menu-title {
+  font-size: 14px;
+  font-weight: 550;
+}
+
+.uni-slash-menu-desc {
+  font-size: 12px;
+  color: #6b7280;
+  color: var(--uni-muted, #6b7280);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.uni-slash-menu-empty {
+  padding: 12px;
+  text-align: center;
+  color: #6b7280;
+  font-size: 13px;
+}
+
+/* ─── Block overlay (drag + plus) ────────────────────────────────────── */
+
+.uni-block-overlay {
+  position: fixed;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  pointer-events: auto;
+}
+
+.uni-plus-button,
+.uni-drag-handle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: #ffffff;
+  background: var(--uni-bg, #ffffff);
+  color: #6b7280;
+  color: var(--uni-muted, #6b7280);
+  cursor: pointer;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.06);
+  transition: background 0.1s ease, color 0.1s ease, border-color 0.1s ease;
+}
+
+.uni-plus-button:hover,
+.uni-drag-handle:hover {
+  background: #f3f4f6;
+  background: var(--uni-hover, #f3f4f6);
+  color: #1a1a1a;
+  color: var(--uni-fg, #1a1a1a);
+}
+
+.uni-drag-handle {
+  cursor: grab;
+}
+
+.uni-drag-handle:active {
+  cursor: grabbing;
+}
+
+.uni-drag-handle[aria-expanded='true'],
+.uni-drag-handle:focus-visible {
+  background: var(--uni-active, #e0e7ff);
+  color: var(--uni-accent, #4f46e5);
+  border-color: rgba(79, 70, 229, 0.35);
+}
+
+/* ─── Block more-menu (drag-handle click) ────────────────────────────── */
+
+.uni-block-menu-root {
+  position: fixed;
+  inset: 0;
+  z-index: 10020;
+  pointer-events: none;
+}
+
+.uni-block-menu {
+  pointer-events: auto;
+  min-width: 200px;
+  max-width: 260px;
+  padding: 6px;
+  border-radius: 10px;
+  background: #fff;
+  border: 1px solid var(--uni-border, #e5e7eb);
+  box-shadow:
+    0 12px 40px rgba(15, 23, 42, 0.14),
+    0 2px 8px rgba(15, 23, 42, 0.06);
+  font-family: var(--uni-font);
+  color: var(--uni-fg, #1a1a1a);
+}
+
+.uni-block-menu-header {
+  padding: 6px 10px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--uni-muted, #6b7280);
+}
+
+.uni-block-menu-divider {
+  height: 1px;
+  margin: 4px 6px;
+  background: var(--uni-border, #e5e7eb);
+}
+
+.uni-block-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 10px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  font-size: 13px;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.uni-block-menu-item:hover,
+.uni-block-menu-item-active {
+  background: var(--uni-hover, #f3f4f6);
+}
+
+.uni-block-menu-item-active {
+  color: var(--uni-accent, #4f46e5);
+  font-weight: 600;
+}
+
+.uni-block-menu-item-danger {
+  color: #b91c1c;
+}
+
+.uni-block-menu-item-danger:hover {
+  background: #fef2f2;
+}
+
+.uni-block-menu-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  opacity: 0.85;
+}
+
+.uni-block-menu-icon svg {
+  width: 18px;
+  height: 18px;
+  display: block;
+}
+
+.uni-block-menu-label {
+  flex: 1;
+  min-width: 0;
+}
+
+.uni-block-menu-chevron {
+  display: inline-flex;
+  opacity: 0.45;
+}
+
+.uni-block-menu-chevron svg {
+  width: 16px;
+  height: 16px;
+}
+
+.uni-block-menu-color-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 6px;
+  padding: 8px 10px 10px;
+}
+
+.uni-block-menu-color-swatch {
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  padding: 0;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+.uni-block-menu-color-swatch:hover {
+  transform: scale(1.08);
+  box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.25);
+}
+
+/* ─── Drop indicator ─────────────────────────────────────────────────── */
+
+.uni-drop-indicator {
+  height: 3px;
+  background: var(--uni-accent, #4f46e5);
+  border-radius: 999px;
+  pointer-events: none;
+  z-index: 10001;
+  box-shadow:
+    0 0 0 2px rgba(79, 70, 229, 0.15),
+    0 1px 6px rgba(79, 70, 229, 0.35);
+}
+
+.uni-drop-indicator::before,
+.uni-drop-indicator::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--uni-accent, #4f46e5);
+  transform: translateY(-50%);
+  box-shadow: 0 0 0 2px #fff;
+}
+
+.uni-drop-indicator::before {
+  left: -2px;
+}
+
+.uni-drop-indicator::after {
+  right: -2px;
+}
+
+/* ─── Extended text formats ──────────────────────────────────────────── */
+
+.uni-text-highlight {
+  background: #fef08a;
+  border-radius: 2px;
+  padding: 0 2px;
+}
+.uni-text-subscript {
+  vertical-align: sub;
+  font-size: 0.75em;
+}
+.uni-text-superscript {
+  vertical-align: super;
+  font-size: 0.75em;
+}
+
+.uni-h4 { font-size: 1.125rem; font-weight: 600; margin: 0.25em 0; }
+.uni-h5 { font-size: 1rem; font-weight: 600; margin: 0.2em 0; }
+.uni-h6 { font-size: 0.875rem; font-weight: 600; margin: 0.2em 0; }
+
+/* ─── HR / Attachment / Container ────────────────────────────────────── */
+
+.uni-hr {
+  border: none;
+  border-top: 2px solid var(--uni-border, #e5e7eb);
+  margin: 1em 0;
+}
+
+.uni-attachment {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border: 1px solid var(--uni-border, #e5e7eb);
+  border-radius: 8px;
+  background: #fafafa;
+  color: var(--uni-accent, #4f46e5);
+  text-decoration: none;
+  font-size: 14px;
+  margin: 0.4em 0;
+}
+
+.uni-container {
+  border: 1px solid var(--uni-border, #e5e7eb);
+  border-left: 4px solid var(--uni-accent, #4f46e5);
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin: 0.5em 0;
+  background: #f8fafc;
+}
+
+/* ─── Table ──────────────────────────────────────────────────────────── */
+
+.uni-table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 0.5em 0;
+  table-layout: fixed;
+}
+
+.uni-table-cell,
+.uni-table-cell-header,
+.uni-table td,
+.uni-table th {
+  border: 1px solid var(--uni-border, #e5e7eb);
+  padding: 8px 10px;
+  min-width: 48px;
+  vertical-align: top;
+}
+
+.uni-table-cell-header,
+.uni-table th {
+  background: #f3f4f6;
+  font-weight: 600;
+}
+
+/* ─── Table grid picker ──────────────────────────────────────────────── */
+
+.uni-table-picker {
+  background: #fff;
+  border-radius: 10px;
+  padding: 12px 14px 14px;
+  width: 220px;
+  box-sizing: border-box;
+  user-select: none;
+}
+
+.uni-table-picker-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 4px;
+}
+
+.uni-table-picker-status {
+  font-size: 12px;
+  color: #6b7280;
+  margin-bottom: 10px;
+  font-variant-numeric: tabular-nums;
+}
+
+.uni-table-picker-hint {
+  font-size: 11px;
+  color: #9ca3af;
+  margin-top: 10px;
+}
+
+.uni-table-picker-grid {
+  display: grid;
+  gap: 4px;
+  width: 100%;
+}
+
+.uni-table-picker-cell {
+  width: 100%;
+  aspect-ratio: 1;
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  border: 1px solid #d1d5db;
+  border-radius: 3px;
+  background: #fff;
+  cursor: crosshair;
+  transition: background 0.08s ease, border-color 0.08s ease;
+}
+
+.uni-table-picker-cell-active {
+  background: #c7d2fe;
+  border-color: #4f46e5;
+  box-shadow: inset 0 0 0 1px rgba(79, 70, 229, 0.25);
+}
+
+/* tippy.js UniLexical theme */
+.tippy-box[data-theme~='unilexical'] {
+  background: #fff;
+  color: #111827;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  box-shadow: 0 10px 40px rgba(15, 23, 42, 0.12), 0 2px 8px rgba(15, 23, 42, 0.06);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.tippy-box[data-theme~='unilexical'][data-placement^='top'] > .tippy-arrow::before {
+  border-top-color: #fff;
+}
+.tippy-box[data-theme~='unilexical'][data-placement^='bottom'] > .tippy-arrow::before {
+  border-bottom-color: #fff;
+}
+.tippy-box[data-theme~='unilexical'] > .tippy-arrow::before {
+  color: #fff;
+}
+.tippy-box[data-theme~='unilexical'] .tippy-content {
+  padding: 6px 10px;
+}
+/* Interactive popovers: no extra content padding (panel has its own) */
+.tippy-box[data-theme~='unilexical'][data-interactive] .tippy-content {
+  padding: 0;
+}
+
+/* Code highlight tokens (lowlight / highlight.js) */
+.uni-code-block .uni-token-keyword,
+.uni-token-keyword { color: #7c3aed; }
+.uni-token-string { color: #059669; }
+.uni-token-number { color: #d97706; }
+.uni-token-comment { color: #9ca3af; font-style: italic; }
+.uni-token-function { color: #2563eb; }
+.uni-token-class-name,
+.uni-token-title { color: #db2777; }
+.uni-token-built_in,
+.uni-token-builtin { color: #0891b2; }
+.uni-token-attr { color: #ea580c; }
+.uni-token-literal { color: #7c3aed; }
+.uni-token-meta { color: #6b7280; }
+.uni-token-punctuation { color: #6b7280; }
+
+/* ─── Toolbar popovers ───────────────────────────────────────────────── */
+
+.uni-toolbar-popover {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+  padding: 6px;
+  max-height: 280px;
+  overflow: auto;
+}
+
+.uni-toolbar-popover-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: none;
+  background: transparent;
+  padding: 8px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  font-family: inherit;
+}
+
+.uni-toolbar-popover-item:hover {
+  background: #f3f4f6;
+}
+
+.uni-color-grid,
+.uni-emoji-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 4px;
+  padding: 4px;
+}
+
+.uni-color-swatch {
+  width: 22px;
+  height: 22px;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  cursor: pointer;
+  padding: 0;
+}
+
+.uni-emoji-btn {
+  border: none;
+  background: transparent;
+  font-size: 18px;
+  cursor: pointer;
+  border-radius: 6px;
+  padding: 4px;
+}
+
+.uni-emoji-btn:hover {
+  background: #f3f4f6;
+}
+
+.uni-toolbar-btn-color {
+  flex-direction: column;
+  gap: 1px;
+  padding-bottom: 3px;
+  height: 32px;
+}
+
+.uni-toolbar-btn-color .uni-toolbar-icon {
+  width: 18px;
+  height: 18px;
+}
+
+.uni-toolbar-btn-color .uni-toolbar-icon svg {
+  width: 18px;
+  height: 18px;
+}
+
+.uni-toolbar-color-bar {
+  display: block;
+  width: 16px;
+  height: 3px;
+  border-radius: 1px;
+  background: currentColor;
+  flex-shrink: 0;
+}
+
+.uni-toolbar-group {
+  width: 6px;
+}
+
+/* ─── Fullscreen / Source ────────────────────────────────────────────── */
+
+.uni-editor-root.uni-fullscreen {
+  position: fixed !important;
+  inset: 0;
+  z-index: 9999;
+  border-radius: 0;
+  max-width: none;
+  background: #fff;
+}
+
+.uni-editor-root.uni-fullscreen .uni-editor-content {
+  min-height: calc(100vh - 60px);
+}
+
+.uni-source-overlay {
+  display: flex;
+  flex-direction: column;
+  min-height: 240px;
+  border-top: 1px solid var(--uni-border, #e5e7eb);
+}
+
+.uni-source-bar {
+  display: flex;
+  gap: 8px;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--uni-border, #e5e7eb);
+  background: #fafafa;
+}
+
+.uni-source-bar button {
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  border-radius: 6px;
+  padding: 4px 10px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.uni-source-textarea {
+  flex: 1;
+  min-height: 280px;
+  border: none;
+  padding: 12px 14px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 13px;
+  line-height: 1.5;
+  resize: vertical;
+  outline: none;
+}
+
+/* Checklist / Todo list (Lexical check list) */
+.uni-checklist,
+ul.uni-checklist,
+.uni-ul.uni-checklist {
+  list-style: none !important;
+  list-style-type: none !important;
+  padding-left: 0.15em;
+  margin: 0.25em 0;
+}
+
+.uni-li.uni-li-checked,
+.uni-li.uni-li-unchecked,
+li.uni-li-checked,
+li.uni-li-unchecked {
+  position: relative;
+  margin: 0.25em 0;
+  padding: 0.1em 0 0.1em 1.85em;
+  list-style: none !important;
+  list-style-type: none !important;
+  outline: none;
+  min-height: 1.65em;
+  line-height: 1.55;
+  cursor: text;
+}
+
+/* Checkbox square (gutter) — high-contrast so empty todos are obvious */
+.uni-li-unchecked::before,
+.uni-li-checked::before,
+li.uni-li-unchecked::before,
+li.uni-li-checked::before {
+  content: '';
+  position: absolute;
+  left: 0.15em;
+  top: 0.28em;
+  width: 18px;
+  height: 18px;
+  border: 2px solid #6b7280;
+  border-radius: 4px;
+  background: #fff;
+  box-sizing: border-box;
+  cursor: pointer;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.04);
+  transition: border-color 0.12s ease, background 0.12s ease, box-shadow 0.12s ease;
+}
+
+.uni-li-checked::before,
+li.uni-li-checked::before {
+  border-color: var(--uni-accent, #4f46e5);
+  background: var(--uni-accent, #4f46e5);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='white' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3.5 8.5l3 3 6-6'/%3E%3C/svg%3E");
+  background-size: 12px 12px;
+  background-position: center;
+  background-repeat: no-repeat;
+  box-shadow: none;
+}
+
+.uni-li-checked,
+li.uni-li-checked {
+  text-decoration: line-through;
+  color: var(--uni-muted, #6b7280);
+}
+
+.uni-li-unchecked:hover::before,
+li.uni-li-unchecked:hover::before {
+  border-color: var(--uni-accent, #4f46e5);
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12);
+}
+
+/* Empty todo placeholder (li only has Lexical <br>) */
+.uni-li-unchecked:has(> br:only-child)::after,
+.uni-li-unchecked:has(> span[data-lexical-text]:only-child:empty)::after {
+  content: 'To-do';
+  color: var(--uni-muted, #9ca3af);
+  pointer-events: none;
+  user-select: none;
+}
+
+@media print {
+  .uni-toolbar,
+  .uni-block-overlay,
+  .uni-block-menu-root,
+  .uni-slash-menu,
+  .uni-toolbar-popover,
+  .uni-table-picker {
+    display: none !important;
+  }
+  .uni-editor-root {
+    border: none;
+  }
+}

@@ -1,0 +1,352 @@
+/**
+ * UniLexical content preview styles.
+ *
+ * Scoped under `.uni-preview` only — the host container is NOT styled.
+ * Import this when rendering exported HTML outside the editor chrome.
+ *
+ *   import 'unilexical/preview.css'
+ */
+
+/* ── Tokens (local to preview, no :root pollution) ───────────────────── */
+
+.uni-preview {
+  --uni-preview-fg: #1a1a1a;
+  --uni-preview-muted: #6b7280;
+  --uni-preview-border: #e5e7eb;
+  --uni-preview-accent: #4f46e5;
+  --uni-preview-quote-border: #d1d5db;
+  --uni-preview-code-bg: #f3f4f6;
+  --uni-preview-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  --uni-preview-font: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue',
+    Arial, sans-serif;
+
+  /* Content layout only — no chrome, no padding, no background */
+  display: block;
+  box-sizing: border-box;
+  color: var(--uni-preview-fg);
+  font-family: var(--uni-preview-font);
+  font-size: 16px;
+  line-height: 1.65;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.uni-preview *,
+.uni-preview *::before,
+.uni-preview *::after {
+  box-sizing: border-box;
+}
+
+/* ── Block spacing ───────────────────────────────────────────────────── */
+
+.uni-preview > :first-child {
+  margin-top: 0;
+}
+
+.uni-preview > :last-child {
+  margin-bottom: 0;
+}
+
+/* ── Paragraphs ──────────────────────────────────────────────────────── */
+
+.uni-preview p,
+.uni-preview .uni-paragraph {
+  margin: 0.5em 0;
+  min-height: 1.4em;
+}
+
+/* ── Headings ────────────────────────────────────────────────────────── */
+
+.uni-preview h1,
+.uni-preview .uni-h1 {
+  font-size: 1.875rem;
+  font-weight: 700;
+  margin: 0.9em 0 0.35em;
+  line-height: 1.25;
+  color: var(--uni-preview-fg);
+}
+
+.uni-preview h2,
+.uni-preview .uni-h2 {
+  font-size: 1.5rem;
+  font-weight: 650;
+  margin: 0.8em 0 0.3em;
+  line-height: 1.3;
+  color: var(--uni-preview-fg);
+}
+
+.uni-preview h3,
+.uni-preview .uni-h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0.7em 0 0.25em;
+  line-height: 1.35;
+  color: var(--uni-preview-fg);
+}
+
+.uni-preview h4,
+.uni-preview .uni-h4 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin: 0.6em 0 0.2em;
+  color: var(--uni-preview-fg);
+}
+
+.uni-preview h5,
+.uni-preview .uni-h5,
+.uni-preview h6,
+.uni-preview .uni-h6 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0.55em 0 0.2em;
+  color: var(--uni-preview-fg);
+}
+
+/* ── Quote ───────────────────────────────────────────────────────────── */
+
+.uni-preview blockquote,
+.uni-preview .uni-quote {
+  margin: 0.6em 0;
+  padding: 0.2em 0 0.2em 1em;
+  border-left: 3px solid var(--uni-preview-quote-border);
+  color: var(--uni-preview-muted);
+}
+
+/* ── Lists ───────────────────────────────────────────────────────────── */
+
+.uni-preview ul,
+.uni-preview ol,
+.uni-preview .uni-ul,
+.uni-preview .uni-ol {
+  margin: 0.4em 0;
+  padding-left: 1.5em;
+}
+
+.uni-preview li,
+.uni-preview .uni-li {
+  margin: 0.2em 0;
+}
+
+/* Checklist (exported may still carry classes) */
+.uni-preview .uni-checklist,
+.uni-preview ul.uni-checklist {
+  list-style: none;
+  padding-left: 0.15em;
+}
+
+.uni-preview .uni-li-checked,
+.uni-preview .uni-li-unchecked,
+.uni-preview li.uni-li-checked,
+.uni-preview li.uni-li-unchecked {
+  position: relative;
+  padding-left: 1.85em;
+  list-style: none;
+  min-height: 1.5em;
+}
+
+.uni-preview .uni-li-unchecked::before,
+.uni-preview .uni-li-checked::before,
+.uni-preview li.uni-li-unchecked::before,
+.uni-preview li.uni-li-checked::before {
+  content: '';
+  position: absolute;
+  left: 0.15em;
+  top: 0.28em;
+  width: 16px;
+  height: 16px;
+  border: 1.5px solid #9ca3af;
+  border-radius: 4px;
+  background: #fff;
+  box-sizing: border-box;
+}
+
+.uni-preview .uni-li-checked::before,
+.uni-preview li.uni-li-checked::before {
+  border-color: var(--uni-preview-accent);
+  background: var(--uni-preview-accent);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='white' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3.5 8.5l3 3 6-6'/%3E%3C/svg%3E");
+  background-size: 11px 11px;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.uni-preview .uni-li-checked,
+.uni-preview li.uni-li-checked {
+  text-decoration: line-through;
+  color: var(--uni-preview-muted);
+}
+
+/* ── Code ────────────────────────────────────────────────────────────── */
+
+.uni-preview pre,
+.uni-preview .uni-code-block {
+  display: block;
+  font-family: var(--uni-preview-mono);
+  font-size: 0.875rem;
+  background: var(--uni-preview-code-bg);
+  border-radius: 6px;
+  padding: 12px 14px;
+  margin: 0.6em 0;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  tab-size: 2;
+}
+
+.uni-preview code,
+.uni-preview .uni-text-code {
+  font-family: var(--uni-preview-mono);
+  font-size: 0.9em;
+  background: var(--uni-preview-code-bg);
+  border-radius: 4px;
+  padding: 0.1em 0.35em;
+}
+
+.uni-preview pre code,
+.uni-preview .uni-code-block code {
+  background: transparent;
+  padding: 0;
+  font-size: inherit;
+}
+
+/* ── Inline text ─────────────────────────────────────────────────────── */
+
+.uni-preview strong,
+.uni-preview b,
+.uni-preview .uni-text-bold {
+  font-weight: 700;
+}
+
+.uni-preview em,
+.uni-preview i,
+.uni-preview .uni-text-italic {
+  font-style: italic;
+}
+
+.uni-preview u,
+.uni-preview .uni-text-underline {
+  text-decoration: underline;
+}
+
+.uni-preview s,
+.uni-preview del,
+.uni-preview .uni-text-strikethrough {
+  text-decoration: line-through;
+}
+
+.uni-preview .uni-text-underline-strikethrough {
+  text-decoration: underline line-through;
+}
+
+.uni-preview .uni-text-highlight {
+  background: #fef08a;
+  border-radius: 2px;
+  padding: 0 2px;
+}
+
+.uni-preview sub,
+.uni-preview .uni-text-subscript {
+  vertical-align: sub;
+  font-size: 0.75em;
+}
+
+.uni-preview sup,
+.uni-preview .uni-text-superscript {
+  vertical-align: super;
+  font-size: 0.75em;
+}
+
+/* ── Links ───────────────────────────────────────────────────────────── */
+
+.uni-preview a,
+.uni-preview .uni-link {
+  color: var(--uni-preview-accent);
+  text-decoration: underline;
+}
+
+.uni-preview a:hover {
+  opacity: 0.85;
+}
+
+/* ── Images ──────────────────────────────────────────────────────────── */
+
+.uni-preview img,
+.uni-preview .uni-image-el {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: 0.6em 0;
+  border-radius: 6px;
+}
+
+.uni-preview .uni-image-wrap,
+.uni-preview .uni-image {
+  display: block;
+  margin: 0.6em 0;
+  max-width: 100%;
+}
+
+.uni-preview .uni-image-wrap img {
+  margin: 0;
+}
+
+/* ── Horizontal rule ─────────────────────────────────────────────────── */
+
+.uni-preview hr,
+.uni-preview .uni-hr {
+  border: none;
+  border-top: 1px solid var(--uni-preview-border);
+  margin: 1em 0;
+}
+
+/* ── Tables ──────────────────────────────────────────────────────────── */
+
+.uni-preview table,
+.uni-preview .uni-table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 0.6em 0;
+  table-layout: fixed;
+}
+
+.uni-preview th,
+.uni-preview td,
+.uni-preview .uni-table-cell,
+.uni-preview .uni-table-cell-header {
+  border: 1px solid var(--uni-preview-border);
+  padding: 8px 10px;
+  vertical-align: top;
+  word-break: break-word;
+}
+
+.uni-preview th,
+.uni-preview .uni-table-cell-header {
+  background: var(--uni-preview-code-bg);
+  font-weight: 600;
+}
+
+/* ── Container / callout ─────────────────────────────────────────────── */
+
+.uni-preview .uni-container {
+  border: 1px solid var(--uni-preview-border);
+  border-left: 4px solid var(--uni-preview-accent);
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin: 0.6em 0;
+  background: #f8fafc;
+}
+
+/* ── Attachment ──────────────────────────────────────────────────────── */
+
+.uni-preview .uni-attachment {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4em;
+  color: var(--uni-preview-accent);
+  text-decoration: none;
+  font-size: 14px;
+  margin: 0.4em 0;
+}
+
+.uni-preview .uni-attachment:hover {
+  text-decoration: underline;
+}

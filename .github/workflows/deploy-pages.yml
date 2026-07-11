@@ -1,0 +1,83 @@
+# Build the Vanilla demo and deploy to GitHub Pages.
+#
+# Triggers:
+#   - Push to main / master
+#   - Pull request (build only, no deploy)
+#   - Manual workflow_dispatch
+#
+# One-time GitHub setup:
+#   Repo → Settings → Pages → Build and deployment → Source: GitHub Actions
+#
+# Site URL (project pages):
+#   https://<owner>.github.io/<repo>/
+
+name: Deploy GitHub Pages
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build vanilla demo
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Build library (types / shared assets)
+        run: npm run build
+
+      - name: Build vanilla demo for Pages
+        env:
+          GITHUB_PAGES: 'true'
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: npm run build:demo
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist-demo
+
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: build
+    # Only deploy from the default branch (not PRs)
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4
