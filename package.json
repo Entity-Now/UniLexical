@@ -103,10 +103,10 @@
   "sideEffects": [
     "*.css"
   ],
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/Entity-Now/UniLexical.git"
-  },
+"repository": {
+  "type": "git",
+  "url": "https://github.com/Entity-Now/UniLexical"
+}
   "bugs": {
     "url": "https://github.com/Entity-Now/UniLexical/issues"
   },
