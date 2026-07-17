@@ -34,7 +34,11 @@ export {
   $createImageNode,
   $isImageNode,
 } from './nodes/ImageNode';
-export type { SerializedImageNode, ImageStatus, CreateImageNodeOptions } from './nodes/ImageNode';
+export type {
+  SerializedImageNode,
+  ImageStatus,
+  CreateImageNodeOptions,
+} from './nodes/ImageNode';
 export type { SerializedBlockWrapperNode } from './nodes/BlockWrapperNode';
 export {
   HorizontalRuleNode,
@@ -50,7 +54,40 @@ export {
   ContainerNode,
   $createContainerNode,
   $isContainerNode,
+  CONTAINER_ICONS,
+  CONTAINER_VARIANTS,
 } from './nodes/ContainerNode';
+export type {
+  ContainerVariant,
+  SerializedContainerNode,
+  CreateContainerOptions,
+} from './nodes/ContainerNode';
+export {
+  CALLOUT_ICONS,
+  CALLOUT_ICON_IDS,
+  getCalloutIconSvg,
+  normalizeCalloutIcon,
+} from './ui/calloutIcons';
+export type { CalloutIconId } from './ui/calloutIcons';
+export {
+  ToggleNode,
+  $createToggleNode,
+  $createToggleWithTitle,
+  $isToggleNode,
+} from './nodes/ToggleNode';
+export type { SerializedToggleNode } from './nodes/ToggleNode';
+export {
+  DateTimeNode,
+  $createDateTimeNode,
+  $isDateTimeNode,
+  formatDateTimeLabel,
+  buildIsoFromParts,
+} from './nodes/DateTimeNode';
+export type { SerializedDateTimeNode } from './nodes/DateTimeNode';
+export type {
+  ImageAlign,
+  ImageDisplay,
+} from './nodes/ImageNode';
 
 // Controllers
 export { MarkdownShortcutsManager } from './plugins/MarkdownShortcutsManager';
@@ -62,6 +99,12 @@ export { BlockMenuUI } from './ui/BlockMenuUI';
 export { SerializationRegistry } from './plugins/SerializationRegistry';
 export { ImageController } from './plugins/ImageController';
 export { AttachmentController } from './plugins/AttachmentController';
+export { BlockExtrasController } from './plugins/BlockExtrasController';
+export { TableActionController } from './plugins/TableActionController';
+export type { TableAction } from './plugins/TableActionController';
+export { TableActionUI } from './ui/TableActionUI';
+export { DateTimePickerUI } from './ui/DateTimePickerUI';
+export { ImageToolbarUI } from './ui/ImageToolbarUI';
 export { registerEmptyBlockExit, $isEffectivelyEmpty } from './plugins/EmptyBlockExit';
 export {
   registerPasteSupport,
@@ -84,6 +127,7 @@ export { LowlightTokenizer, registerLowlightCodeHighlighting } from './plugins/c
 // Preview (read-only content renderer)
 export { UniPreview, mountPreview } from './preview/UniPreview';
 export type { UniPreviewOptions } from './preview/UniPreview';
+export { enhanceHtmlForPreview } from './plugins/previewEnhance';
 
 // Vanilla wrapper
 export { createEditor, mountEditor } from './wrappers/vanilla';

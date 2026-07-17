@@ -36,7 +36,8 @@ const TURN_INTO_OPTIONS: Array<{ kind: BlockContentKind; label: string; material
   { kind: 'number', label: 'Numbered list', material: 'format_list_numbered' },
   { kind: 'check', label: 'To-do list', material: 'checklist' },
   { kind: 'code', label: 'Code', material: 'data_object' },
-  { kind: 'container', label: 'Container', material: 'view_agenda' },
+  { kind: 'container', label: 'Callout', material: 'view_agenda' },
+  { kind: 'toggle', label: 'Toggle', material: 'view_agenda' },
 ];
 
 const DELETE_SVG = `<svg fill="currentColor" aria-hidden="true" width="18" height="18" viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>`;

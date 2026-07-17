@@ -29,6 +29,7 @@ import type { EventEmitter } from '../core/EventEmitter';
 import type { BlockHoverPayload } from '../core/types';
 import { $createBlockWrapperNode } from '../nodes/BlockWrapperNode';
 import { $isContainerNode, $createContainerNode } from '../nodes/ContainerNode';
+import { $isToggleNode, $createToggleWithTitle } from '../nodes/ToggleNode';
 import { $isImageNode } from '../nodes/ImageNode';
 import { $isHorizontalRuleNode } from '../nodes/HorizontalRuleNode';
 import { $createSelectableParagraph, $safeSelectStart, $safeSelectEnd } from '../utils/selection';
@@ -55,6 +56,7 @@ export type BlockContentKind =
   | 'number'
   | 'check'
   | 'container'
+  | 'toggle'
   | 'image'
   | 'hr'
   | 'table'
@@ -83,7 +85,8 @@ const KIND_LABELS: Record<BlockContentKind, string> = {
   bullet: 'Bulleted list',
   number: 'Numbered list',
   check: 'To-do list',
-  container: 'Container',
+  container: 'Callout',
+  toggle: 'Toggle',
   image: 'Image',
   hr: 'Divider',
   table: 'Table',
@@ -100,6 +103,7 @@ function $detectBlockKind(content: LexicalNode | null): BlockContentKind {
     return t === 'number' ? 'number' : t === 'check' ? 'check' : 'bullet';
   }
   if ($isContainerNode(content)) return 'container';
+  if ($isToggleNode(content)) return 'toggle';
   if ($isImageNode(content)) return 'image';
   if ($isHorizontalRuleNode(content)) return 'hr';
   if (content.getType() === 'table') return 'table';
@@ -684,6 +688,9 @@ export class BlockOverlayController {
         p.append($createTextNode(text || ''));
         container.append(p);
         return container;
+      }
+      case 'toggle': {
+        return $createToggleWithTitle(text || '', true);
       }
       case 'paragraph':
       default: {

@@ -48,6 +48,8 @@ export type ToolbarItemId =
   | 'numberedList' // alias of orderedList
   | 'todo'
   | 'container'
+  | 'toggle'
+  | 'datetime'
   // Insert
   | 'link'
   | 'image'
@@ -109,6 +111,8 @@ export interface UniEditorTheme extends EditorThemeClasses {
   tableCellHeader?: string;
   attachment?: string;
   container?: string;
+  toggle?: string;
+  datetime?: string;
   todoChecked?: string;
   todoUnchecked?: string;
 }
@@ -198,7 +202,11 @@ export type SlashAction =
         | 'check'
         | 'code'
         | 'hr'
-        | 'table';
+        | 'table'
+        | 'toggle'
+        | 'container'
+        | 'datetime'
+        | 'datetime-time';
     }
   | { type: 'format'; format: 'bold' | 'italic' | 'underline' | 'strikethrough' | 'code' | 'highlight' }
   | { type: 'image' }

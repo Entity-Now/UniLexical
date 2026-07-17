@@ -42,6 +42,8 @@ import { ImageNode } from '../nodes/ImageNode';
 import { HorizontalRuleNode } from '../nodes/HorizontalRuleNode';
 import { AttachmentNode } from '../nodes/AttachmentNode';
 import { ContainerNode } from '../nodes/ContainerNode';
+import { ToggleNode } from '../nodes/ToggleNode';
+import { DateTimeNode } from '../nodes/DateTimeNode';
 import { registerBlockNormalizeTransform, $normalizeRootBlocks } from '../plugins/blockTransform';
 import { registerEmptyBlockExit } from '../plugins/EmptyBlockExit';
 import { registerPasteSupport } from '../plugins/PasteController';
@@ -54,9 +56,12 @@ import { BlockOverlayController } from '../plugins/BlockOverlayController';
 import { SerializationRegistry, exportHtml, exportMarkdown, exportJson } from '../plugins/SerializationRegistry';
 import { ImageController } from '../plugins/ImageController';
 import { AttachmentController } from '../plugins/AttachmentController';
+import { BlockExtrasController } from '../plugins/BlockExtrasController';
+import { TableActionController } from '../plugins/TableActionController';
 import { ToolbarUI } from '../ui/ToolbarUI';
 import { SlashMenuUI } from '../ui/SlashMenuUI';
 import { BlockOverlayUI } from '../ui/BlockOverlayUI';
+import { TableActionUI } from '../ui/TableActionUI';
 
 export class UniEditor {
   private editor: LexicalEditor;
@@ -79,11 +84,14 @@ export class UniEditor {
   readonly serialization: SerializationRegistry;
   readonly images: ImageController;
   readonly attachments: AttachmentController;
+  readonly extras: BlockExtrasController;
+  readonly tableActions: TableActionController;
   private markdown: MarkdownShortcutsManager;
 
   private toolbarUI: ToolbarUI | null = null;
   private slashUI: SlashMenuUI | null = null;
   private overlayUI: BlockOverlayUI | null = null;
+  private tableActionUI: TableActionUI | null = null;
 
   private version = 0;
   private listeners = new Set<() => void>();
@@ -128,6 +136,8 @@ export class UniEditor {
       HorizontalRuleNode,
       AttachmentNode,
       ContainerNode,
+      ToggleNode,
+      DateTimeNode,
       ...(config.nodes ?? []),
     ];
 
@@ -148,12 +158,17 @@ export class UniEditor {
     this.serialization = new SerializationRegistry(this.editor);
     this.images = new ImageController(this.editor, config.imageOptions ?? {});
     this.attachments = new AttachmentController(this.editor, config.attachmentOptions ?? {});
+    this.extras = new BlockExtrasController(this.editor);
+    this.tableActions = new TableActionController(this.editor);
     this.markdown = new MarkdownShortcutsManager(this.editor);
 
     const requestImage = () => this.images.requestUpload();
     this.toolbar.setImageRequestHandler(requestImage);
     this.slash.setImageRequestHandler(requestImage);
     this.toolbar.setAttachmentRequestHandler(() => this.attachments.requestUpload());
+    const requestDateTime = (includeTime: boolean) => this.extras.insertDateTime(includeTime);
+    this.toolbar.setDateTimeRequestHandler(requestDateTime);
+    this.slash.setDateTimeRequestHandler(requestDateTime);
     if (config.onCustomAction) {
       this.toolbar.setCustomActionHandler(config.onCustomAction);
     }
@@ -234,6 +249,8 @@ export class UniEditor {
     this.slash.mount();
     this.toolbar.mount();
     this.overlay.mount(content);
+    this.extras.mount(content);
+    this.tableActions.mount(content);
 
     // Fullscreen / source handlers
     this.toolbar.setFullscreenHandler(() => {
@@ -315,8 +332,11 @@ export class UniEditor {
         this.slashUI?.setActiveHighlight(index);
       });
 
-      this.overlayUI = new BlockOverlayUI(this.overlay, this.slash);
+      // Mount overlay on editor root so it shares modal/dialog stacking contexts
+      this.overlayUI = new BlockOverlayUI(this.overlay, this.slash, container);
       this.overlayUI.bind((cb) => this.on('blockHoverChanged', cb));
+
+      this.tableActionUI = new TableActionUI(this.tableActions);
     }
 
     this.mounted = true;
@@ -375,14 +395,18 @@ export class UniEditor {
     this.toolbarUI?.destroy();
     this.slashUI?.destroy();
     this.overlayUI?.destroy();
+    this.tableActionUI?.destroy();
     this.toolbarUI = null;
     this.slashUI = null;
     this.overlayUI = null;
+    this.tableActionUI = null;
 
     this.markdown.destroy();
     this.slash.destroy();
     this.toolbar.destroy();
     this.overlay.destroy();
+    this.extras.destroy();
+    this.tableActions.destroy();
     this.images.destroy();
     this.attachments.destroy();
 

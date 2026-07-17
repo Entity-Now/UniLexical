@@ -6,10 +6,11 @@ import { BlockMenuUI } from './BlockMenuUI';
 /**
  * Floating drag-handle + plus button beside hovered blocks.
  *
- * Important: the overlay lives on document.body (outside the contenteditable).
- * Moving the pointer onto it fires pointerleave on the editor — we therefore
- * keep a stable `activeBlockId` and only hide after a short grace period, so
- * click / drag handlers still know which block to target.
+ * The overlay is mounted on the editor root (preferred) or `document.body`,
+ * outside the contenteditable. Moving the pointer onto it fires pointerleave
+ * on the editor — we therefore keep a stable `activeBlockId` and only hide
+ * after a short grace period, so click / drag handlers still know which block
+ * to target.
  *
  * Drag handle:
  * - drag → reorder blocks
@@ -27,17 +28,38 @@ export class BlockOverlayUI {
   /** True if a native drag actually started (suppress click → menu) */
   private didDrag = false;
   private menu: BlockMenuUI;
+  private host: HTMLElement;
 
+  /**
+   * @param host Mount target for the floating overlay. Prefer the editor root
+   *   (`.uni-editor-root`) so the overlay participates in the same stacking
+   *   context as dialogs/modals that wrap the editor. Falls back to `document.body`.
+   */
   constructor(
     private overlay: BlockOverlayController,
     private slash: SlashCommandController | null = null,
+    host?: HTMLElement | null,
   ) {
     this.menu = new BlockMenuUI(overlay);
+    this.host = host ?? document.body;
 
     this.root = document.createElement('div');
     this.root.className = 'uni-block-overlay';
-    this.root.style.display = 'none';
-    this.root.style.position = 'fixed';
+    this.root.setAttribute('data-uni-overlay', 'true');
+    // Inline critical geometry so host CSS cannot zero-out the chrome
+    this.root.style.cssText = [
+      'display:none',
+      'position:fixed',
+      'z-index:10050',
+      'pointer-events:auto',
+      'opacity:1',
+      'visibility:visible',
+      'box-sizing:border-box',
+      'margin:0',
+      'padding:0',
+      'border:none',
+      'background:transparent',
+    ].join(';');
 
     this.plusBtn = document.createElement('button');
     this.plusBtn.type = 'button';
@@ -45,6 +67,7 @@ export class BlockOverlayUI {
     this.plusBtn.title = 'Add block';
     this.plusBtn.setAttribute('aria-label', 'Add block');
     this.plusBtn.innerHTML = PLUS_SVG;
+    applyControlButtonInlineStyles(this.plusBtn);
     // Do NOT preventDefault on mousedown for drag; for plus, prevent editor blur
     this.plusBtn.addEventListener('pointerdown', (e) => {
       e.preventDefault();
@@ -71,6 +94,8 @@ export class BlockOverlayUI {
     this.dragBtn.setAttribute('aria-label', 'Drag to reorder or click for block menu');
     this.dragBtn.draggable = true;
     this.dragBtn.innerHTML = DRAG_SVG;
+    applyControlButtonInlineStyles(this.dragBtn);
+    this.dragBtn.style.cursor = 'grab';
 
     // Critical: do NOT call preventDefault on mousedown — it cancels HTML5 drag
     this.dragBtn.addEventListener('pointerdown', (e) => {
@@ -124,7 +149,8 @@ export class BlockOverlayUI {
 
     this.root.appendChild(this.plusBtn);
     this.root.appendChild(this.dragBtn);
-    document.body.appendChild(this.root);
+    // Mount under editor root when available so modal stacking contexts still show us
+    this.host.appendChild(this.root);
 
     this.root.addEventListener('pointerenter', () => {
       this.pointerOnOverlay = true;
@@ -156,9 +182,17 @@ export class BlockOverlayUI {
     this.root.style.display = 'flex';
 
     const { rect } = payload;
-    this.root.style.top = `${rect.top + 2}px`;
-    this.root.style.left = `${Math.max(4, rect.left - 52)}px`;
+    // Prefer the left gutter (content has ~56px padding). Keep fully on-screen.
+    const overlayWidth = 52;
+    const preferredLeft = rect.left - overlayWidth;
+    const maxLeft = Math.max(4, window.innerWidth - overlayWidth - 4);
+    const left = Math.min(maxLeft, Math.max(4, preferredLeft));
+    const top = Math.max(4, Math.min(rect.top + 2, window.innerHeight - 28));
+
+    this.root.style.top = `${top}px`;
+    this.root.style.left = `${left}px`;
     this.root.style.height = `${Math.max(24, Math.min(rect.height, 40))}px`;
+    this.root.style.zIndex = '10050';
   }
 
   private scheduleHide(): void {
@@ -193,11 +227,42 @@ export class BlockOverlayUI {
   }
 }
 
-const PLUS_SVG = `<svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+/** Defensive inline styles so host button resets cannot hide controls */
+function applyControlButtonInlineStyles(btn: HTMLButtonElement): void {
+  btn.style.cssText = [
+    'display:inline-flex',
+    'align-items:center',
+    'justify-content:center',
+    'box-sizing:border-box',
+    'width:24px',
+    'min-width:24px',
+    'height:24px',
+    'min-height:24px',
+    'margin:0',
+    'padding:0',
+    'border:1px solid rgba(0,0,0,0.08)',
+    'border-radius:4px',
+    'background:#ffffff',
+    'background-color:#ffffff',
+    'color:#6b7280',
+    'opacity:1',
+    'visibility:visible',
+    'cursor:pointer',
+    'font-size:14px',
+    'line-height:1',
+    'flex-shrink:0',
+    'pointer-events:auto',
+    'box-shadow:0 1px 2px rgba(15,23,42,0.08)',
+    '-webkit-appearance:none',
+    'appearance:none',
+  ].join(';');
+}
+
+const PLUS_SVG = `<svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style="display:block;width:14px;height:14px;min-width:14px;min-height:14px;max-width:none;pointer-events:none">
   <path d="M7 2v10M2 7h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
 </svg>`;
 
-const DRAG_SVG = `<svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+const DRAG_SVG = `<svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style="display:block;width:14px;height:14px;min-width:14px;min-height:14px;max-width:none;pointer-events:none">
   <circle cx="5" cy="3.5" r="1" fill="currentColor"/>
   <circle cx="9" cy="3.5" r="1" fill="currentColor"/>
   <circle cx="5" cy="7" r="1" fill="currentColor"/>

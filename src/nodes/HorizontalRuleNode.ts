@@ -40,7 +40,9 @@ export class HorizontalRuleNode extends DecoratorNode<HTMLElement> {
   }
 
   exportDOM(): DOMExportOutput {
-    return { element: document.createElement('hr') };
+    const hr = document.createElement('hr');
+    hr.className = 'uni-hr';
+    return { element: hr };
   }
 
   static importDOM(): DOMConversionMap | null {

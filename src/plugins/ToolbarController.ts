@@ -53,6 +53,7 @@ import { normalizeToolbarItemId } from '../core/types';
 import { $isImageNode } from '../nodes/ImageNode';
 import { $createHorizontalRuleNode } from '../nodes/HorizontalRuleNode';
 import { $createContainerNode } from '../nodes/ContainerNode';
+import { $createToggleWithTitle } from '../nodes/ToggleNode';
 import { $createBlockWrapperNode } from '../nodes/BlockWrapperNode';
 import { $getBlockWrapper } from './blockTransform';
 
@@ -94,6 +95,7 @@ export class ToolbarController {
   private cleanups: Array<() => void> = [];
   private items: ToolbarItemId[];
   private onImageRequest: (() => void) | null = null;
+  private onDateTimeRequest: ((includeTime: boolean) => void) | null = null;
   private onAttachmentRequest: (() => void) | null = null;
   private onCustomAction: (() => void) | null = null;
   private onTablePickRequest: (() => void) | null = null;
@@ -130,6 +132,10 @@ export class ToolbarController {
 
   setImageRequestHandler(handler: () => void): void {
     this.onImageRequest = handler;
+  }
+
+  setDateTimeRequestHandler(handler: (includeTime: boolean) => void): void {
+    this.onDateTimeRequest = handler;
   }
   setAttachmentRequestHandler(handler: () => void): void {
     this.onAttachmentRequest = handler;
@@ -672,6 +678,43 @@ export class ToolbarController {
     });
   }
 
+  insertToggle(): void {
+    this.editor.update(() => {
+      const selection = $getSelection();
+      if (!$isRangeSelection(selection)) return;
+      const block = $getBlockWrapper(selection.anchor.getNode());
+      const toggle = $createToggleWithTitle('', true);
+      const empty =
+        !!block &&
+        block.isAttached() &&
+        block.getTextContent().replace(/[\u200B\u00A0]/g, '').trim() === '';
+
+      $setSelection(null);
+      if (block && block.isAttached() && empty) {
+        const content = block.getFirstChild();
+        if (content) content.replace(toggle);
+        else block.append(toggle);
+      } else if (block && block.isAttached()) {
+        const wrap = $createBlockWrapperNode();
+        wrap.append(toggle);
+        block.insertAfter(wrap);
+      } else {
+        const wrap = $createBlockWrapperNode();
+        wrap.append(toggle);
+        $getRoot().append(wrap);
+      }
+      try {
+        toggle.getFirstChild()?.selectEnd();
+      } catch {
+        /* ignore */
+      }
+    });
+  }
+
+  insertDateTime(includeTime = false): void {
+    this.onDateTimeRequest?.(includeTime);
+  }
+
   clearFormatting(): void {
     this.editor.update(() => {
       const selection = $getSelection();
@@ -884,6 +927,10 @@ export class ToolbarController {
         return this.setBlockType('code');
       case 'container':
         return this.insertContainer();
+      case 'toggle':
+        return this.insertToggle();
+      case 'datetime':
+        return this.insertDateTime(false);
       case 'indentIncrease':
         this.editor.dispatchCommand(INDENT_CONTENT_COMMAND, undefined);
         return;

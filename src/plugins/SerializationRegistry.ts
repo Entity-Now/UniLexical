@@ -12,6 +12,7 @@ import {
 } from '@lexical/markdown';
 import type { ContentFormat } from '../core/types';
 import { $normalizeRootBlocks } from './blockTransform';
+import { enhanceHtmlForPreview } from './previewEnhance';
 
 export interface FormatAdapter {
   exportToString(editor: LexicalEditor): string;
@@ -119,13 +120,16 @@ function wrapHtmlFragment(html: string): string {
 }
 
 /**
- * Remove structural block-wrapper divs while keeping semantic children.
+ * Remove structural block-wrapper chrome while keeping semantic content +
+ * preview-friendly classes (toggle / callout / image align / datetime).
  */
 function cleanExportedHtml(html: string): string {
   if (typeof DOMParser === 'undefined') return html;
   try {
     const parser = new DOMParser();
     const doc = parser.parseFromString(wrapHtmlFragment(html), 'text/html');
+
+    // Unwrap block wrappers only (keep custom block nodes)
     const wrappers = doc.querySelectorAll(
       '.uni-block-wrapper, [data-block-id], [data-lexical-block], [data-uni-block]',
     );
@@ -137,15 +141,30 @@ function cleanExportedHtml(html: string): string {
       }
       parent.removeChild(wrap);
     });
-    // Strip decorator containers
-    doc.querySelectorAll('.uni-image-container, .uni-image-wrap').forEach((el) => {
-      const img = el.querySelector('img');
-      if (img && el.parentNode) {
-        el.parentNode.insertBefore(img, el);
-        el.remove();
+
+    // Strip editor-only image chrome, but KEEP .uni-image-wrap so align/display survive
+    doc
+      .querySelectorAll('.uni-image-resize-handle, .uni-image-spinner')
+      .forEach((el) => el.remove());
+
+    // Flatten .uni-image-frame (editor layout) → leave img inside wrap
+    doc.querySelectorAll('.uni-image-frame').forEach((frame) => {
+      const img = frame.querySelector('img');
+      const parent = frame.parentElement;
+      if (img && parent) {
+        parent.insertBefore(img, frame);
+        frame.remove();
       }
     });
-    return doc.body.innerHTML;
+
+    // Legacy bare image container: promote classes onto wrap if needed
+    doc.querySelectorAll('.uni-image-container').forEach((el) => {
+      el.classList.add('uni-image-wrap', 'uni-image');
+    });
+
+    const cleaned = doc.body.innerHTML;
+    // Ensure semantic classes + callout icons for preview.css
+    return enhanceHtmlForPreview(cleaned);
   } catch {
     return html;
   }

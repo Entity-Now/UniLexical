@@ -24,6 +24,7 @@ import {
 import { $isCodeNode } from '@lexical/code';
 import { $createBlockWrapperNode } from '../nodes/BlockWrapperNode';
 import { $isContainerNode, type ContainerNode } from '../nodes/ContainerNode';
+import { $isToggleNode, type ToggleNode } from '../nodes/ToggleNode';
 import {
   $getBlockWrapper,
   $insertParagraphBlockAfter,
@@ -288,6 +289,46 @@ function $findContainer(node: LexicalNode | null): ContainerNode | null {
   return null;
 }
 
+function $findToggle(node: LexicalNode | null): ToggleNode | null {
+  let current: LexicalNode | null = node;
+  while (current) {
+    if ($isToggleNode(current)) return current;
+    current = current.getParent();
+  }
+  return null;
+}
+
+function $findToggleInnerChild(
+  anchor: LexicalNode,
+  toggle: ToggleNode,
+): ElementNode | null {
+  let current: LexicalNode | null = anchor;
+  while (current) {
+    const parent: LexicalNode | null = current.getParent();
+    if (parent === toggle && $isElementNode(current)) {
+      return current;
+    }
+    current = parent;
+  }
+  return null;
+}
+
+function $exitEmptyToggle(toggle: ToggleNode, emptyChild: ElementNode): boolean {
+  if (!toggle.isAttached() || !emptyChild.isAttached()) return false;
+  $setSelection(null);
+  if (emptyChild.isAttached()) emptyChild.remove();
+  const block = $getBlockWrapper(toggle);
+  if (block && block.isAttached()) {
+    const next = $insertParagraphBlockAfter(block);
+    $safeSelectStart(next.getFirstChild() ?? next);
+    return true;
+  }
+  const paragraph = $createSelectableParagraph();
+  toggle.insertAfter(paragraph);
+  $safeSelectStart(paragraph);
+  return true;
+}
+
 /** Direct child element of the container that holds the selection. */
 function $findContainerInnerChild(
   anchor: LexicalNode,
@@ -394,6 +435,29 @@ export function registerEmptyBlockExit(editor: LexicalEditor): () => void {
             return $exitEmptyContainer(container, inner);
           }
           // Non-empty: let Lexical create a new paragraph inside the container
+          return false;
+        }
+
+        // ── Toggle ───────────────────────────────────────────────────────
+        const toggle = $findToggle(anchor);
+        if (toggle && toggle.isAttached()) {
+          const inner = $findToggleInnerChild(anchor, toggle);
+          // Empty title (first child) with Enter when open → add body paragraph
+          // Empty body line → exit toggle
+          if (inner && $isEffectivelyEmpty(inner)) {
+            const kids = toggle.getChildren();
+            const isTitle = kids[0] === inner;
+            if (isTitle && toggle.getOpen() && kids.length === 1) {
+              // Add a body line under title
+              const p = $createSelectableParagraph();
+              toggle.append(p);
+              $safeSelectStart(p);
+              return true;
+            }
+            if (!isTitle) {
+              return $exitEmptyToggle(toggle, inner);
+            }
+          }
           return false;
         }
 

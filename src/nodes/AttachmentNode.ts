@@ -64,8 +64,10 @@ export class AttachmentNode extends DecoratorNode<HTMLElement> {
 
   exportDOM(): DOMExportOutput {
     const a = document.createElement('a');
+    a.className = 'uni-attachment';
     a.href = this.__src;
     a.download = this.__name;
+    a.setAttribute('data-uni-attachment', 'true');
     a.textContent = this.__name;
     return { element: a };
   }

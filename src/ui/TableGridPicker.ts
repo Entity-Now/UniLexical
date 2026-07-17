@@ -4,15 +4,21 @@ import { showFloatingContent, attachPopover } from './tippy';
 
 /**
  * Interactive row × column grid picker for table insertion.
- * Default board: 5×5. Hover or drag to choose size; single confirm path.
+ *
+ * Starts at a base size (default 5×5). When the selection reaches the current
+ * edge, the board grows by one row/col (up to hardMax, default 20) — Notion-like.
  */
 export class TableGridPicker {
   private panel: HTMLElement;
   private status: HTMLElement;
   private grid: HTMLElement;
   private cells: HTMLButtonElement[][] = [];
-  private maxRows: number;
-  private maxCols: number;
+  /** Current painted board size (grows dynamically) */
+  private boardRows: number;
+  private boardCols: number;
+  private baseRows: number;
+  private baseCols: number;
+  private hardMax: number;
   private onPick: ((rows: number, cols: number) => void) | null = null;
   private hoverRows = 0;
   private hoverCols = 0;
@@ -21,9 +27,12 @@ export class TableGridPicker {
   private tippyInst: TippyInstance | null = null;
   private freeInst: TippyInstance | null = null;
 
-  constructor(maxRows = 5, maxCols = 5) {
-    this.maxRows = Math.max(1, Math.min(maxRows, 12));
-    this.maxCols = Math.max(1, Math.min(maxCols, 12));
+  constructor(baseRows = 5, baseCols = 5, hardMax = 20) {
+    this.baseRows = Math.max(1, Math.min(baseRows, hardMax));
+    this.baseCols = Math.max(1, Math.min(baseCols, hardMax));
+    this.hardMax = Math.max(this.baseRows, Math.min(hardMax, 30));
+    this.boardRows = this.baseRows;
+    this.boardCols = this.baseCols;
 
     this.panel = document.createElement('div');
     this.panel.className = 'uni-table-picker';
@@ -40,14 +49,39 @@ export class TableGridPicker {
 
     this.grid = document.createElement('div');
     this.grid.className = 'uni-table-picker-grid';
-    // Fill container: equal flexible cells
-    this.grid.style.gridTemplateColumns = `repeat(${this.maxCols}, minmax(0, 1fr))`;
     this.grid.setAttribute('role', 'grid');
     this.grid.setAttribute('aria-label', 'Table size selector');
+    this.rebuildGrid();
 
-    for (let r = 0; r < this.maxRows; r++) {
+    this.grid.addEventListener('pointerleave', () => {
+      if (!this.dragging) this.paint(0, 0);
+    });
+    document.addEventListener('pointerup', this.onDocPointerUp);
+
+    const hint = document.createElement('div');
+    hint.className = 'uni-table-picker-hint';
+    hint.textContent = 'Hover edge to expand · Click to insert';
+
+    this.panel.appendChild(this.grid);
+    this.panel.appendChild(hint);
+  }
+
+  private onDocPointerUp = (): void => {
+    if (!this.dragging) return;
+    this.dragging = false;
+    if (!this.confirmed && this.hoverRows > 0 && this.hoverCols > 0) {
+      this.confirm(this.hoverRows, this.hoverCols);
+    }
+  };
+
+  private rebuildGrid(): void {
+    this.grid.innerHTML = '';
+    this.cells = [];
+    this.grid.style.gridTemplateColumns = `repeat(${this.boardCols}, minmax(0, 1fr))`;
+
+    for (let r = 0; r < this.boardRows; r++) {
       const row: HTMLButtonElement[] = [];
-      for (let c = 0; c < this.maxCols; c++) {
+      for (let c = 0; c < this.boardCols; c++) {
         const cell = document.createElement('button');
         cell.type = 'button';
         cell.className = 'uni-table-picker-cell';
@@ -58,6 +92,7 @@ export class TableGridPicker {
 
         cell.addEventListener('pointerenter', () => {
           this.paint(r + 1, c + 1);
+          this.maybeExpand(r + 1, c + 1);
         });
         cell.addEventListener('pointerdown', (e) => {
           e.preventDefault();
@@ -65,7 +100,6 @@ export class TableGridPicker {
           this.dragging = true;
           this.paint(r + 1, c + 1);
         });
-        // Single confirm path — click only (pointerup handled once below)
         cell.addEventListener('click', (e) => {
           e.preventDefault();
           e.stopPropagation();
@@ -77,32 +111,32 @@ export class TableGridPicker {
       }
       this.cells.push(row);
     }
-
-    this.grid.addEventListener('pointerleave', () => {
-      if (!this.dragging) this.paint(0, 0);
-    });
-    // Confirm drag selection on pointerup anywhere
-    document.addEventListener('pointerup', this.onDocPointerUp);
-
-    const hint = document.createElement('div');
-    hint.className = 'uni-table-picker-hint';
-    hint.textContent = 'Hover or drag to select · Click to insert';
-
-    this.panel.appendChild(this.grid);
-    this.panel.appendChild(hint);
   }
 
-  private onDocPointerUp = (): void => {
-    if (!this.dragging) return;
-    this.dragging = false;
-    // Only confirm via drag-release if we have a selection and haven't clicked
-    // (click handler already confirms — skip if already confirmed)
-    if (!this.confirmed && this.hoverRows > 0 && this.hoverCols > 0) {
-      this.confirm(this.hoverRows, this.hoverCols);
+  /** Grow board when selection touches current edge */
+  private maybeExpand(rows: number, cols: number): void {
+    let changed = false;
+    if (rows >= this.boardRows && this.boardRows < this.hardMax) {
+      this.boardRows = Math.min(this.hardMax, this.boardRows + 1);
+      changed = true;
     }
-  };
+    if (cols >= this.boardCols && this.boardCols < this.hardMax) {
+      this.boardCols = Math.min(this.hardMax, this.boardCols + 1);
+      changed = true;
+    }
+    if (changed) {
+      const keepR = this.hoverRows;
+      const keepC = this.hoverCols;
+      this.rebuildGrid();
+      this.paint(keepR || rows, keepC || cols);
+      // Keep tippy sized
+      this.tippyInst?.popperInstance?.update?.();
+      this.freeInst?.popperInstance?.update?.();
+    }
+  }
 
   openOn(anchor: HTMLElement, onPick: (rows: number, cols: number) => void): void {
+    this.resetBoard();
     this.onPick = onPick;
     this.confirmed = false;
     this.paint(0, 0);
@@ -122,6 +156,7 @@ export class TableGridPicker {
   }
 
   openAt(rect: DOMRect, onPick: (rows: number, cols: number) => void): void {
+    this.resetBoard();
     this.onPick = onPick;
     this.confirmed = false;
     this.paint(0, 0);
@@ -133,6 +168,12 @@ export class TableGridPicker {
         this.confirmed = false;
       },
     });
+  }
+
+  private resetBoard(): void {
+    this.boardRows = this.baseRows;
+    this.boardCols = this.baseCols;
+    this.rebuildGrid();
   }
 
   hide(): void {
@@ -151,22 +192,21 @@ export class TableGridPicker {
   }
 
   private confirm(rows: number, cols: number): void {
-    if (this.confirmed) return; // idempotent — prevent double insert
+    if (this.confirmed) return;
     if (rows < 1 || cols < 1) return;
     this.confirmed = true;
     this.dragging = false;
 
     const pick = this.onPick;
     const active: Element[] = [];
-    for (let r = 0; r < rows; r++) {
-      for (let c = 0; c < cols; c++) {
+    for (let r = 0; r < Math.min(rows, this.boardRows); r++) {
+      for (let c = 0; c < Math.min(cols, this.boardCols); c++) {
         active.push(this.cells[r][c]);
       }
     }
     animateTableCells(active);
     pulseActive(this.status);
     this.hide();
-    // Defer insert so tippy hide + animation don't race editor update
     window.setTimeout(() => {
       pick?.(rows, cols);
       this.confirmed = false;
@@ -177,9 +217,9 @@ export class TableGridPicker {
     this.hoverRows = rows;
     this.hoverCols = cols;
     this.status.textContent = rows && cols ? `${rows} × ${cols}` : 'Select size';
-    for (let r = 0; r < this.maxRows; r++) {
-      for (let c = 0; c < this.maxCols; c++) {
-        this.cells[r][c].classList.toggle(
+    for (let r = 0; r < this.boardRows; r++) {
+      for (let c = 0; c < this.boardCols; c++) {
+        this.cells[r][c]?.classList.toggle(
           'uni-table-picker-cell-active',
           r < rows && c < cols,
         );

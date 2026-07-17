@@ -29,6 +29,8 @@ import type { SlashAction, SlashMenuItem, SlashTriggerPayload } from '../core/ty
 import { $getBlockWrapper } from './blockTransform';
 import { $createHorizontalRuleNode } from '../nodes/HorizontalRuleNode';
 import { $createBlockWrapperNode } from '../nodes/BlockWrapperNode';
+import { $createToggleWithTitle } from '../nodes/ToggleNode';
+import { $createContainerNode } from '../nodes/ContainerNode';
 
 export const DEFAULT_SLASH_ITEMS: SlashMenuItem[] = [
   {
@@ -127,6 +129,38 @@ export const DEFAULT_SLASH_ITEMS: SlashMenuItem[] = [
     icon: '🖼',
     action: { type: 'image' },
   },
+  {
+    id: 'toggle',
+    title: 'Toggle list',
+    description: 'Collapsible section with a title',
+    keywords: ['toggle', 'collapse', 'fold', 'accordion', 'spoiler'],
+    icon: '▸',
+    action: { type: 'block', blockType: 'toggle' },
+  },
+  {
+    id: 'container',
+    title: 'Callout',
+    description: 'Highlighted container with icon',
+    keywords: ['callout', 'container', 'info', 'warning', 'box'],
+    icon: '💡',
+    action: { type: 'block', blockType: 'container' },
+  },
+  {
+    id: 'datetime',
+    title: 'Date',
+    description: 'Inline date chip',
+    keywords: ['date', 'day', 'calendar'],
+    icon: '📅',
+    action: { type: 'block', blockType: 'datetime' },
+  },
+  {
+    id: 'datetime-time',
+    title: 'Date & time',
+    description: 'Inline date with time',
+    keywords: ['datetime', 'time', 'timestamp', 'schedule'],
+    icon: '🕒',
+    action: { type: 'block', blockType: 'datetime-time' },
+  },
 ];
 
 function getCaretRect(): DOMRect | null {
@@ -157,6 +191,7 @@ export class SlashCommandController {
   private cleanups: Array<() => void> = [];
   private onImageRequest: (() => void) | null = null;
   private onTableRequest: (() => void) | null = null;
+  private onDateTimeRequest: ((includeTime: boolean) => void) | null = null;
   private slashTextKey: NodeKey | null = null;
   private slashCaretOffset: number | null = null;
   private lastRect: DOMRect | null = null;
@@ -177,6 +212,10 @@ export class SlashCommandController {
 
   setTableRequestHandler(handler: () => void): void {
     this.onTableRequest = handler;
+  }
+
+  setDateTimeRequestHandler(handler: (includeTime: boolean) => void): void {
+    this.onDateTimeRequest = handler;
   }
 
   setActiveIndexChangeHandler(handler: (index: number) => void): void {
@@ -468,6 +507,44 @@ export class SlashCommandController {
     // Table: only open picker (do NOT also insert a default table)
     if (blockType === 'table') {
       return () => this.onTableRequest?.();
+    }
+
+    // Inline date/datetime chips
+    if (blockType === 'datetime' || blockType === 'datetime-time') {
+      const includeTime = blockType === 'datetime-time';
+      return () => this.onDateTimeRequest?.(includeTime);
+    }
+
+    // Toggle (collapsible)
+    if (blockType === 'toggle') {
+      const toggle = $createToggleWithTitle(remainingText || '', true);
+      const contentNode = block.getFirstChild();
+      if (contentNode) contentNode.replace(toggle);
+      else block.append(toggle);
+      const title = toggle.getFirstChild();
+      if (title) {
+        try {
+          title.selectEnd();
+        } catch {
+          /* ignore */
+        }
+      }
+      return null;
+    }
+
+    // Callout / container
+    if (blockType === 'container') {
+      const container = $createContainerNode();
+      const p = $createParagraphNode();
+      const t = $createTextNode(remainingText || '');
+      p.append(t);
+      container.append(p);
+      const contentNode = block.getFirstChild();
+      if (contentNode) contentNode.replace(container);
+      else block.append(container);
+      const len = t.getTextContentSize();
+      t.select(len, len);
+      return null;
     }
 
     // ── Lists (incl. todo/check) ───────────────────────────────────────

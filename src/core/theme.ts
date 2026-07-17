@@ -87,6 +87,8 @@ export const defaultTheme: UniEditorTheme = {
   hr: 'uni-hr',
   attachment: 'uni-attachment',
   container: 'uni-container',
+  toggle: 'uni-toggle',
+  datetime: 'uni-datetime',
   todoChecked: 'uni-li-checked',
   todoUnchecked: 'uni-li-unchecked',
 };

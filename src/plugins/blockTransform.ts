@@ -220,7 +220,8 @@ export function $isBlockEffectivelyEmpty(block: BlockWrapperNode): boolean {
       t === 'horizontalrule' ||
       t === 'table' ||
       t === 'attachment' ||
-      t === 'container'
+      t === 'container' ||
+      t === 'toggle'
     ) {
       return false;
     }

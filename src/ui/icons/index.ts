@@ -102,6 +102,8 @@ export const TOOLBAR_ICON_MAP = {
   "quote": "format_quote",
   "codeBlock": "data_object",
   "container": "view_agenda",
+  "toggle": "view_agenda",
+  "datetime": "notes",
   "link": "link",
   "image": "image",
   "attachment": "attach_file",

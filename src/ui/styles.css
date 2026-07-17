@@ -1,5 +1,13 @@
 /* ─── UniLexical base styles ─────────────────────────────────────────── */
-/* CSS variables on :root so body-level floating UI (slash/overlay) inherits them */
+/*
+ * Reset-resistant design:
+ * Host apps often ship Tailwind Preflight, Normalize, Ant Design, Element Plus,
+ * Bootstrap, etc. which zero list-style, restyle buttons/inputs, force svg
+ * max-width, and override headings/links. Rules below use:
+ *  - solid color fallbacks (not CSS vars alone)
+ *  - !important on properties commonly clobbered by global resets
+ *  - high-specificity selectors scoped under .uni-editor-root / floating roots
+ */
 
 :root {
   --uni-bg: #ffffff;
@@ -17,31 +25,148 @@
   --uni-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
+/* ── Isolation: editor + body-level floating surfaces ─────────────────── */
+
+.uni-editor-root,
+.uni-slash-menu,
+.uni-block-menu-root,
+.uni-block-menu,
+.uni-block-overlay,
+.uni-toolbar-popover,
+.uni-table-picker,
+.uni-drop-indicator,
+.uni-block-drag-ghost,
+.tippy-box[data-theme~='unilexical'] {
+  font-family: var(--uni-font, system-ui, sans-serif) !important;
+  color: var(--uni-fg, #1a1a1a);
+  line-height: 1.5;
+  font-size: 14px;
+  font-weight: 400;
+  font-style: normal;
+  letter-spacing: normal;
+  text-transform: none;
+  text-indent: 0;
+  text-shadow: none;
+  word-spacing: normal;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.uni-editor-root,
+.uni-editor-root *,
+.uni-editor-root *::before,
+.uni-editor-root *::after,
+.uni-slash-menu,
+.uni-slash-menu *,
+.uni-slash-menu *::before,
+.uni-slash-menu *::after,
+.uni-block-menu-root,
+.uni-block-menu-root *,
+.uni-block-menu-root *::before,
+.uni-block-menu-root *::after,
+.uni-block-overlay,
+.uni-block-overlay *,
+.uni-toolbar-popover,
+.uni-toolbar-popover *,
+.uni-table-picker,
+.uni-table-picker *,
+.tippy-box[data-theme~='unilexical'],
+.tippy-box[data-theme~='unilexical'] * {
+  box-sizing: border-box !important;
+}
+
+/* Neutralize common host link / heading / image leaks inside the editor */
+.uni-editor-root a {
+  color: inherit;
+  text-decoration: none;
+  background: transparent;
+}
+
+.uni-editor-root img {
+  border-style: none;
+  max-width: 100%;
+}
+
+.uni-editor-root table {
+  border-collapse: collapse;
+  border-spacing: 0;
+}
+
+.uni-editor-root button,
+.uni-slash-menu button,
+.uni-block-menu-root button,
+.uni-block-overlay button,
+.uni-toolbar-popover button,
+.uni-table-picker button,
+.tippy-box[data-theme~='unilexical'] button {
+  -webkit-appearance: none !important;
+  appearance: none !important;
+  font-family: inherit !important;
+  margin: 0;
+}
+
+/* SVG icons: resist svg { max-width:100%; height:auto; display:none } resets */
+.uni-editor-root svg,
+.uni-slash-menu svg,
+.uni-block-menu-root svg,
+.uni-block-overlay svg,
+.uni-toolbar-popover svg,
+.uni-table-picker svg,
+.tippy-box[data-theme~='unilexical'] svg {
+  display: block !important;
+  max-width: none !important;
+  overflow: visible !important;
+  flex-shrink: 0;
+  vertical-align: middle;
+}
+
+/* ── Shell ───────────────────────────────────────────────────────────── */
+
 .uni-editor-root {
-  position: relative;
-  font-family: var(--uni-font);
-  color: var(--uni-fg);
-  background: var(--uni-bg);
-  border: 1px solid var(--uni-border);
-  border-radius: var(--uni-radius);
-  overflow: visible; /* allow block overlay to sit in the left gutter */
+  position: relative !important;
+  display: block !important;
+  font-family: var(--uni-font) !important;
+  color: var(--uni-fg, #1a1a1a) !important;
+  background: var(--uni-bg, #ffffff) !important;
+  border: 1px solid var(--uni-border, #e5e7eb) !important;
+  border-radius: var(--uni-radius, 8px);
+  overflow: visible !important;
+  isolation: isolate;
+  /* Re-assert text defaults hosts may flip */
+  text-align: left;
+  white-space: normal;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
 }
 
 .uni-editor-shell {
   min-height: 200px;
+  display: block;
+  position: relative;
+  background: transparent;
 }
 
 .uni-editor-content {
-  position: relative;
-  padding: 12px 16px 48px 56px;
-  outline: none;
-  min-height: 240px;
-  line-height: 1.6;
-  font-size: 16px;
+  position: relative !important;
+  display: block !important;
+  padding: 12px 16px 48px 56px !important;
+  outline: none !important;
+  min-height: 240px !important;
+  line-height: 1.6 !important;
+  font-size: 16px !important;
+  font-family: inherit !important;
+  color: inherit !important;
+  background: transparent !important;
+  border: none !important;
+  white-space: normal !important;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  caret-color: auto;
 }
 
 .uni-editor-content:focus {
-  outline: none;
+  outline: none !important;
+  box-shadow: none;
 }
 
 .uni-editor-content[contenteditable='false'] {
@@ -53,47 +178,50 @@
 .uni-editor-content:has(.uni-block-wrapper:only-child .uni-paragraph:empty)::before,
 .uni-placeholder-visible::before {
   content: attr(data-placeholder);
-  color: var(--uni-muted);
-  pointer-events: none;
-  position: absolute;
-  left: 56px;
-  top: 12px;
+  color: var(--uni-muted, #6b7280) !important;
+  pointer-events: none !important;
+  position: absolute !important;
+  left: 56px !important;
+  top: 12px !important;
   opacity: 0.7;
+  font-size: 16px;
+  line-height: 1.6;
+  font-weight: 400;
+  font-style: normal;
 }
 
 /* ─── Blocks ─────────────────────────────────────────────────────────── */
 
 .uni-block-wrapper {
-  position: relative;
-  padding: 4px 8px;
-  margin: 1px 0;
+  position: relative !important;
+  display: block !important;
+  padding: 4px 8px !important;
+  margin: 1px 0 !important;
   border-radius: 6px;
-  border: 1.5px solid transparent;
-  box-sizing: border-box;
+  border: 1.5px solid transparent !important;
+  background: transparent;
+  box-sizing: border-box !important;
   transition:
     background 0.12s ease,
     border-color 0.12s ease,
     box-shadow 0.12s ease;
 }
 
-/* Hover ring — border style as requested */
 .uni-block-wrapper:hover,
 .uni-block-wrapper.uni-block-hover {
-  border-color: rgba(79, 70, 229, 0.35);
-  background: rgba(79, 70, 229, 0.03);
+  border-color: rgba(79, 70, 229, 0.35) !important;
+  background: rgba(79, 70, 229, 0.03) !important;
   box-shadow: 0 0 0 1px rgba(79, 70, 229, 0.06);
 }
 
-/* While dragging a block, suppress hover chrome noise */
 .uni-editor-is-dragging .uni-block-wrapper:hover {
-  border-color: transparent;
-  background: transparent;
-  box-shadow: none;
+  border-color: transparent !important;
+  background: transparent !important;
+  box-shadow: none !important;
 }
 
-/* Source block during drag — dashed ring, no permanent grey wash */
 .uni-block-dragging {
-  opacity: 0.5;
+  opacity: 0.5 !important;
   border-color: var(--uni-accent, #4f46e5) !important;
   border-style: dashed !important;
   background: rgba(79, 70, 229, 0.04) !important;
@@ -101,121 +229,315 @@
   filter: none !important;
 }
 
-/* Drop target highlight */
 .uni-block-drop-target {
   border-color: rgba(79, 70, 229, 0.45) !important;
   background: rgba(79, 70, 229, 0.06) !important;
 }
 
-/* Floating drag ghost (clone for setDragImage) */
 .uni-block-drag-ghost {
   position: fixed !important;
   top: -10000px !important;
   left: -10000px !important;
-  z-index: 100000;
-  pointer-events: none;
-  opacity: 0.92;
+  z-index: 100000 !important;
+  pointer-events: none !important;
+  opacity: 0.92 !important;
   border: 1.5px solid var(--uni-accent, #4f46e5) !important;
-  border-radius: 6px;
+  border-radius: 6px !important;
   background: #fff !important;
-  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.18), 0 2px 6px rgba(15, 23, 42, 0.08);
-  padding: 4px 8px;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.18), 0 2px 6px rgba(15, 23, 42, 0.08) !important;
+  padding: 4px 8px !important;
   color: var(--uni-fg, #1a1a1a) !important;
   filter: none !important;
 }
 
+/* ─── Content typography ─────────────────────────────────────────────── */
+
+.uni-editor-content .uni-paragraph,
+.uni-editor-root .uni-paragraph,
 .uni-paragraph {
-  margin: 0;
-  min-height: 1.6em;
+  display: block !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  min-height: 1.6em !important;
+  font-size: inherit !important;
+  font-weight: 400 !important;
+  line-height: inherit !important;
+  color: inherit !important;
+  background: transparent !important;
+  border: none !important;
 }
 
+.uni-editor-content .uni-h1,
+.uni-editor-root .uni-h1,
 .uni-h1 {
-  font-size: 1.875rem;
-  font-weight: 700;
-  margin: 0.4em 0 0.2em;
-  line-height: 1.25;
-  color: var(--uni-fg, #1a1a1a);
+  display: block !important;
+  font-size: 1.875rem !important;
+  font-weight: 700 !important;
+  margin: 0.4em 0 0.2em !important;
+  padding: 0 !important;
+  line-height: 1.25 !important;
+  color: var(--uni-fg, #1a1a1a) !important;
+  background: transparent !important;
+  border: none !important;
 }
 
+.uni-editor-content .uni-h2,
+.uni-editor-root .uni-h2,
 .uni-h2 {
-  font-size: 1.5rem;
-  font-weight: 650;
-  margin: 0.35em 0 0.15em;
-  line-height: 1.3;
-  color: var(--uni-fg, #1a1a1a);
+  display: block !important;
+  font-size: 1.5rem !important;
+  font-weight: 650 !important;
+  margin: 0.35em 0 0.15em !important;
+  padding: 0 !important;
+  line-height: 1.3 !important;
+  color: var(--uni-fg, #1a1a1a) !important;
+  background: transparent !important;
+  border: none !important;
 }
 
+.uni-editor-content .uni-h3,
+.uni-editor-root .uni-h3,
 .uni-h3 {
-  font-size: 1.25rem;
-  font-weight: 600;
-  margin: 0.3em 0 0.1em;
-  line-height: 1.35;
-  color: var(--uni-fg, #1a1a1a);
+  display: block !important;
+  font-size: 1.25rem !important;
+  font-weight: 600 !important;
+  margin: 0.3em 0 0.1em !important;
+  padding: 0 !important;
+  line-height: 1.35 !important;
+  color: var(--uni-fg, #1a1a1a) !important;
+  background: transparent !important;
+  border: none !important;
 }
 
-.uni-h4,
-.uni-h5,
+.uni-editor-content .uni-h4,
+.uni-editor-root .uni-h4,
+.uni-h4 {
+  display: block !important;
+  font-size: 1.125rem !important;
+  font-weight: 600 !important;
+  margin: 0.25em 0 !important;
+  padding: 0 !important;
+  color: var(--uni-fg, #1a1a1a) !important;
+  background: transparent !important;
+  border: none !important;
+}
+
+.uni-editor-content .uni-h5,
+.uni-editor-root .uni-h5,
+.uni-h5 {
+  display: block !important;
+  font-size: 1rem !important;
+  font-weight: 600 !important;
+  margin: 0.2em 0 !important;
+  padding: 0 !important;
+  color: var(--uni-fg, #1a1a1a) !important;
+  background: transparent !important;
+  border: none !important;
+}
+
+.uni-editor-content .uni-h6,
+.uni-editor-root .uni-h6,
 .uni-h6 {
-  color: var(--uni-fg, #1a1a1a);
+  display: block !important;
+  font-size: 0.875rem !important;
+  font-weight: 600 !important;
+  margin: 0.2em 0 !important;
+  padding: 0 !important;
+  color: var(--uni-fg, #1a1a1a) !important;
+  background: transparent !important;
+  border: none !important;
 }
 
+.uni-editor-content .uni-quote,
+.uni-editor-root .uni-quote,
 .uni-quote {
-  margin: 0.4em 0;
-  padding: 0.25em 0 0.25em 1em;
-  border-left: 3px solid var(--uni-quote-border);
-  color: var(--uni-muted);
+  display: block !important;
+  margin: 0.4em 0 !important;
+  padding: 0.25em 0 0.25em 1em !important;
+  border: none !important;
+  border-left: 3px solid var(--uni-quote-border, #d1d5db) !important;
+  color: var(--uni-muted, #6b7280) !important;
+  background: transparent !important;
+  font-style: normal !important;
+  quotes: none;
 }
 
+/*
+ * Lists — restore markers against Tailwind/Normalize/Ant resets.
+ */
+.uni-editor-content ul,
+.uni-editor-content ol,
+.uni-editor-content .uni-ul,
+.uni-editor-content .uni-ol,
+.uni-editor-root .uni-ul,
+.uni-editor-root .uni-ol,
 .uni-ul,
 .uni-ol {
-  margin: 0.25em 0;
-  padding-left: 1.5em;
+  display: block !important;
+  margin: 0.25em 0 !important;
+  padding-left: 1.5em !important;
+  list-style-position: outside !important;
+  border: none !important;
+  background: transparent !important;
 }
 
+.uni-editor-content ul,
+.uni-editor-content .uni-ul,
+.uni-editor-root .uni-ul,
+ul.uni-ul,
+.uni-ul {
+  list-style-type: disc !important;
+  list-style: disc outside !important;
+}
+
+.uni-editor-content ol,
+.uni-editor-content .uni-ol,
+.uni-editor-root .uni-ol,
+ol.uni-ol,
+.uni-ol {
+  list-style-type: decimal !important;
+  list-style: decimal outside !important;
+}
+
+.uni-editor-content .uni-ul .uni-ul,
+.uni-editor-root .uni-ul .uni-ul {
+  list-style-type: circle !important;
+  list-style: circle outside !important;
+}
+
+.uni-editor-content .uni-ul .uni-ul .uni-ul,
+.uni-editor-root .uni-ul .uni-ul .uni-ul {
+  list-style-type: square !important;
+  list-style: square outside !important;
+}
+
+.uni-editor-content .uni-ol .uni-ol,
+.uni-editor-root .uni-ol .uni-ol {
+  list-style-type: lower-alpha !important;
+  list-style: lower-alpha outside !important;
+}
+
+.uni-editor-content .uni-ol .uni-ol .uni-ol,
+.uni-editor-root .uni-ol .uni-ol .uni-ol {
+  list-style-type: lower-roman !important;
+  list-style: lower-roman outside !important;
+}
+
+.uni-editor-content li,
+.uni-editor-content .uni-li,
+.uni-editor-root .uni-li,
+li.uni-li,
 .uni-li {
-  margin: 0.15em 0;
+  display: list-item !important;
+  list-style: inherit !important;
+  list-style-position: outside !important;
+  margin: 0.15em 0 !important;
+  color: inherit !important;
+  background: transparent !important;
 }
 
+.uni-editor-content .uni-li::marker,
+.uni-editor-root .uni-li::marker,
+.uni-li::marker {
+  color: var(--uni-fg, #1a1a1a) !important;
+  font-weight: 400 !important;
+}
+
+.uni-nested-li,
+.uni-editor-content .uni-nested-li,
+.uni-editor-root .uni-nested-li {
+  list-style-type: none !important;
+  list-style: none !important;
+}
+
+.uni-editor-content .uni-code-block,
+.uni-editor-root .uni-code-block,
 .uni-code-block {
-  display: block;
-  font-family: var(--uni-mono);
-  font-size: 0.875rem;
-  background: var(--uni-code-bg);
-  border-radius: 6px;
-  padding: 12px 14px;
-  margin: 0.4em 0;
-  overflow-x: auto;
-  white-space: pre-wrap;
+  display: block !important;
+  font-family: var(--uni-mono, ui-monospace, monospace) !important;
+  font-size: 0.875rem !important;
+  font-weight: 400 !important;
+  font-style: normal !important;
+  background: var(--uni-code-bg, #f3f4f6) !important;
+  color: var(--uni-fg, #1a1a1a) !important;
+  border-radius: 6px !important;
+  border: none !important;
+  padding: 12px 14px !important;
+  margin: 0.4em 0 !important;
+  overflow-x: auto !important;
+  white-space: pre-wrap !important;
   tab-size: 2;
+  line-height: 1.5 !important;
 }
 
+/* Inline text formats — force common host overrides */
+.uni-editor-content .uni-text-bold,
+.uni-editor-root .uni-text-bold,
 .uni-text-bold {
-  font-weight: 700;
+  font-weight: 700 !important;
 }
+.uni-editor-content .uni-text-italic,
+.uni-editor-root .uni-text-italic,
 .uni-text-italic {
-  font-style: italic;
+  font-style: italic !important;
 }
+.uni-editor-content .uni-text-underline,
+.uni-editor-root .uni-text-underline,
 .uni-text-underline {
-  text-decoration: underline;
+  text-decoration: underline !important;
 }
+.uni-editor-content .uni-text-strikethrough,
+.uni-editor-root .uni-text-strikethrough,
 .uni-text-strikethrough {
-  text-decoration: line-through;
+  text-decoration: line-through !important;
 }
+.uni-editor-content .uni-text-underline-strikethrough,
+.uni-editor-root .uni-text-underline-strikethrough,
 .uni-text-underline-strikethrough {
-  text-decoration: underline line-through;
+  text-decoration: underline line-through !important;
 }
+.uni-editor-content .uni-text-code,
+.uni-editor-root .uni-text-code,
 .uni-text-code {
-  font-family: var(--uni-mono);
-  font-size: 0.9em;
-  background: var(--uni-code-bg);
-  border-radius: 4px;
-  padding: 0.1em 0.35em;
+  font-family: var(--uni-mono, ui-monospace, monospace) !important;
+  font-size: 0.9em !important;
+  background: var(--uni-code-bg, #f3f4f6) !important;
+  border-radius: 4px !important;
+  padding: 0.1em 0.35em !important;
+  color: inherit !important;
+  border: none !important;
 }
 
+.uni-editor-content .uni-link,
+.uni-editor-root .uni-link,
 .uni-link {
-  color: var(--uni-accent);
-  text-decoration: underline;
-  cursor: pointer;
+  color: var(--uni-accent, #4f46e5) !important;
+  text-decoration: underline !important;
+  cursor: pointer !important;
+  background: transparent !important;
+  border: none !important;
+  font-weight: inherit !important;
+}
+
+.uni-editor-content .uni-text-highlight,
+.uni-editor-root .uni-text-highlight,
+.uni-text-highlight {
+  background: #fef08a !important;
+  border-radius: 2px;
+  padding: 0 2px;
+  color: inherit !important;
+}
+.uni-editor-content .uni-text-subscript,
+.uni-editor-root .uni-text-subscript,
+.uni-text-subscript {
+  vertical-align: sub !important;
+  font-size: 0.75em !important;
+}
+.uni-editor-content .uni-text-superscript,
+.uni-editor-root .uni-text-superscript,
+.uni-text-superscript {
+  vertical-align: super !important;
+  font-size: 0.75em !important;
 }
 
 /* ─── Images ─────────────────────────────────────────────────────────── */
@@ -223,830 +545,1570 @@
 .uni-image-container,
 .uni-image-wrap,
 .uni-image {
-  display: block;
-  margin: 0.5em 0;
-  max-width: 100%;
-  position: relative;
-  /* Ensure the block takes space even while the image bytes decode */
+  display: block !important;
+  margin: 0.5em 0 !important;
+  max-width: 100% !important;
+  position: relative !important;
   min-height: 1.5em;
+  border: none !important;
+  background: transparent !important;
 }
 
 .uni-image-el {
-  max-width: 100%;
-  width: auto;
-  height: auto;
+  max-width: 100% !important;
+  width: auto !important;
+  height: auto !important;
   border-radius: 6px;
-  display: block;
+  display: block !important;
   object-fit: contain;
   background: var(--uni-hover, #f3f4f6);
-  /* Tiny placeholders (e.g. 1×1 test pixels) stay tiny; real photos scale */
   min-width: 0;
+  border: none !important;
+  box-shadow: none;
 }
 
 .uni-image-loading {
-  position: relative;
-  min-height: 96px;
-  background: var(--uni-hover);
+  position: relative !important;
+  min-height: 96px !important;
+  background: var(--uni-hover, #f3f4f6) !important;
   border-radius: 6px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
 }
 
 .uni-image-spinner {
-  color: var(--uni-muted);
-  font-size: 13px;
-  position: absolute;
+  color: var(--uni-muted, #6b7280) !important;
+  font-size: 13px !important;
+  position: absolute !important;
   inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  pointer-events: none;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  pointer-events: none !important;
 }
 
 .uni-image-error {
-  display: block;
-  padding: 12px 14px;
+  display: block !important;
+  padding: 12px 14px !important;
   border-radius: 6px;
-  background: #fef2f2;
-  color: #b91c1c;
-  font-size: 13px;
-  border: 1px dashed #fecaca;
+  background: #fef2f2 !important;
+  color: #b91c1c !important;
+  font-size: 13px !important;
+  border: 1px dashed #fecaca !important;
+}
+
+/* ─── Shared control buttons (toolbar / menus / pickers) ─────────────── */
+
+.uni-toolbar-btn,
+.uni-slash-menu-item,
+.uni-block-menu-item,
+.uni-toolbar-popover-item,
+.uni-emoji-btn,
+.uni-color-swatch,
+.uni-block-menu-color-swatch,
+.uni-table-picker-cell,
+.uni-source-bar button,
+.uni-plus-button,
+.uni-drag-handle {
+  -webkit-appearance: none !important;
+  appearance: none !important;
+  box-sizing: border-box !important;
+  margin: 0 !important;
+  font-family: inherit !important;
+  font-style: normal !important;
+  letter-spacing: normal !important;
+  text-transform: none !important;
+  text-indent: 0 !important;
+  text-shadow: none !important;
+  text-decoration: none !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+  outline: none;
+  box-shadow: none;
 }
 
 /* ─── Toolbar ────────────────────────────────────────────────────────── */
 
 .uni-toolbar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 2px;
-  padding: 8px 10px;
-  border-bottom: 1px solid var(--uni-border);
-  background: #fafafa;
-  user-select: none;
+  display: flex !important;
+  flex-wrap: wrap !important;
+  align-items: center !important;
+  gap: 2px !important;
+  padding: 8px 10px !important;
+  border: none !important;
+  border-bottom: 1px solid var(--uni-border, #e5e7eb) !important;
+  background: #fafafa !important;
+  user-select: none !important;
+  position: relative;
+  z-index: 2;
+  min-height: 40px;
 }
 
 .uni-toolbar-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-  width: 32px;
-  min-width: 32px;
-  height: 32px;
-  padding: 0;
-  border: none;
-  border-radius: 6px;
-  background: transparent;
-  color: #374151;
-  font-size: 13px;
-  font-weight: 600;
-  font-family: inherit;
-  cursor: pointer;
-  /* Avoid transition on class thrash during typing — only hover feels animated */
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  position: relative !important;
+  width: 32px !important;
+  min-width: 32px !important;
+  max-width: none !important;
+  height: 32px !important;
+  min-height: 32px !important;
+  padding: 0 !important;
+  border: none !important;
+  border-radius: 6px !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  color: #374151 !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  line-height: 1 !important;
+  cursor: pointer !important;
   transition: background 0.08s ease, color 0.08s ease;
-  /* Stable paint layer so attribute toggles don't flash the whole bar */
   contain: layout style;
+  flex-shrink: 0 !important;
 }
 
 .uni-toolbar-btn:hover:not(:disabled) {
-  background: var(--uni-hover);
-  color: #111827;
+  background: var(--uni-hover, #f3f4f6) !important;
+  background-color: var(--uni-hover, #f3f4f6) !important;
+  color: #111827 !important;
 }
 
 .uni-toolbar-btn-active {
-  background: var(--uni-active) !important;
-  color: var(--uni-accent) !important;
+  background: var(--uni-active, #e0e7ff) !important;
+  background-color: var(--uni-active, #e0e7ff) !important;
+  color: var(--uni-accent, #4f46e5) !important;
 }
 
 .uni-toolbar-btn:disabled {
-  opacity: 0.35;
-  cursor: not-allowed;
+  opacity: 0.35 !important;
+  cursor: not-allowed !important;
 }
 
-/* Material Design toolbar icons (local SVG) */
 .uni-toolbar-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 20px;
-  height: 20px;
-  line-height: 0;
-  pointer-events: none;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 20px !important;
+  height: 20px !important;
+  line-height: 0 !important;
+  pointer-events: none !important;
+  flex-shrink: 0 !important;
 }
 
 .uni-toolbar-icon svg {
-  width: 20px;
-  height: 20px;
-  display: block;
+  width: 20px !important;
+  height: 20px !important;
+  min-width: 20px !important;
+  min-height: 20px !important;
+  max-width: none !important;
+  max-height: none !important;
+  display: block !important;
+  fill: currentColor;
 }
 
 .uni-toolbar-label {
-  font-size: 12px;
-  font-weight: 700;
-  line-height: 1;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  line-height: 1 !important;
+  color: inherit !important;
 }
 
 .uni-toolbar-divider {
-  width: 1px;
-  height: 18px;
-  background: var(--uni-border);
-  margin: 0 4px;
+  display: inline-block !important;
+  width: 1px !important;
+  height: 18px !important;
+  min-width: 1px !important;
+  background: var(--uni-border, #e5e7eb) !important;
+  margin: 0 4px !important;
+  border: none !important;
+  padding: 0 !important;
+  flex-shrink: 0 !important;
+}
+
+.uni-toolbar-group {
+  display: inline-block !important;
+  width: 6px !important;
+  min-width: 6px !important;
+  height: 1px !important;
+  flex-shrink: 0 !important;
+}
+
+.uni-toolbar-btn-color {
+  flex-direction: column !important;
+  gap: 1px !important;
+  padding-bottom: 3px !important;
+  height: 32px !important;
+}
+
+.uni-toolbar-btn-color .uni-toolbar-icon {
+  width: 18px !important;
+  height: 18px !important;
+}
+
+.uni-toolbar-btn-color .uni-toolbar-icon svg {
+  width: 18px !important;
+  height: 18px !important;
+  min-width: 18px !important;
+  min-height: 18px !important;
+}
+
+.uni-toolbar-color-bar {
+  display: block !important;
+  width: 16px !important;
+  height: 3px !important;
+  border-radius: 1px !important;
+  background: currentColor !important;
+  flex-shrink: 0 !important;
 }
 
 /* ─── Slash menu (body-level floating) ───────────────────────────────── */
 
 .uni-slash-menu {
-  position: fixed;
-  z-index: 10000;
-  min-width: 260px;
-  max-width: 320px;
-  max-height: 320px;
-  overflow-y: auto;
-  /* Solid fallbacks — must not rely on editor-scoped vars alone */
-  background: #ffffff;
-  background: var(--uni-bg, #ffffff);
-  border: 1px solid #e5e7eb;
-  border: 1px solid var(--uni-border, #e5e7eb);
-  border-radius: 10px;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.12), 0 1px 3px rgba(0, 0, 0, 0.08);
-  padding: 6px;
-  font-family: var(--uni-font, system-ui, sans-serif);
-  color: #1a1a1a;
-  color: var(--uni-fg, #1a1a1a);
+  position: fixed !important;
+  z-index: 10000 !important;
+  min-width: 260px !important;
+  max-width: 320px !important;
+  max-height: 320px !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  background: #ffffff !important;
+  border: 1px solid #e5e7eb !important;
+  border-radius: 10px !important;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.12), 0 1px 3px rgba(0, 0, 0, 0.08) !important;
+  padding: 6px !important;
+  font-family: var(--uni-font, system-ui, sans-serif) !important;
+  color: #1a1a1a !important;
+  margin: 0 !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+  isolation: isolate;
 }
 
 .uni-slash-menu-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  width: 100%;
-  padding: 8px 10px;
-  border: none;
-  border-radius: 6px;
-  background: transparent;
-  text-align: left;
-  cursor: pointer;
-  font-family: inherit;
-  color: inherit;
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  width: 100% !important;
+  min-height: 44px !important;
+  padding: 8px 10px !important;
+  border: none !important;
+  border-radius: 6px !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  text-align: left !important;
+  cursor: pointer !important;
+  color: #1a1a1a !important;
+  font-size: 14px !important;
+  font-weight: 400 !important;
+  line-height: 1.3 !important;
 }
 
 .uni-slash-menu-item:hover,
 .uni-slash-menu-item-active {
-  background: #f3f4f6;
-  background: var(--uni-hover, #f3f4f6);
+  background: #f3f4f6 !important;
+  background-color: #f3f4f6 !important;
 }
 
 .uni-slash-menu-icon {
-  flex-shrink: 0;
-  width: 36px;
-  height: 36px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #fff;
-  border: 1px solid #e5e7eb;
-  border: 1px solid var(--uni-border, #e5e7eb);
-  border-radius: 6px;
-  font-size: 12px;
-  font-weight: 700;
-  color: #6b7280;
-  color: var(--uni-muted, #6b7280);
+  flex-shrink: 0 !important;
+  width: 36px !important;
+  height: 36px !important;
+  min-width: 36px !important;
+  min-height: 36px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background: #fff !important;
+  border: 1px solid #e5e7eb !important;
+  border-radius: 6px !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  color: #6b7280 !important;
+  line-height: 1 !important;
 }
 
 .uni-slash-menu-body {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 2px !important;
+  min-width: 0 !important;
+  flex: 1 1 auto !important;
 }
 
 .uni-slash-menu-title {
-  font-size: 14px;
-  font-weight: 550;
+  font-size: 14px !important;
+  font-weight: 550 !important;
+  color: #1a1a1a !important;
+  line-height: 1.3 !important;
 }
 
 .uni-slash-menu-desc {
-  font-size: 12px;
-  color: #6b7280;
-  color: var(--uni-muted, #6b7280);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  font-size: 12px !important;
+  color: #6b7280 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  line-height: 1.3 !important;
 }
 
 .uni-slash-menu-empty {
-  padding: 12px;
-  text-align: center;
-  color: #6b7280;
-  font-size: 13px;
+  padding: 12px !important;
+  text-align: center !important;
+  color: #6b7280 !important;
+  font-size: 13px !important;
 }
 
 /* ─── Block overlay (drag + plus) ────────────────────────────────────── */
 
-.uni-block-overlay {
-  position: fixed;
-  z-index: 50;
+.uni-block-overlay,
+.uni-editor-root > .uni-block-overlay,
+body > .uni-block-overlay {
+  position: fixed !important;
+  z-index: 10050 !important;
   display: flex;
-  align-items: center;
-  gap: 2px;
-  pointer-events: auto;
+  align-items: center !important;
+  gap: 2px !important;
+  pointer-events: auto !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  box-sizing: border-box !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+  background: transparent !important;
+  isolation: isolate;
+  transform: none;
+  filter: none;
+  contain: none;
 }
 
+.uni-block-overlay .uni-plus-button,
+.uni-block-overlay .uni-drag-handle,
 .uni-plus-button,
 .uni-drag-handle {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
-  padding: 0;
-  border: 1px solid transparent;
-  border-radius: 4px;
-  background: #ffffff;
-  background: var(--uni-bg, #ffffff);
-  color: #6b7280;
-  color: var(--uni-muted, #6b7280);
-  cursor: pointer;
-  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.06);
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 24px !important;
+  min-width: 24px !important;
+  max-width: 24px !important;
+  height: 24px !important;
+  min-height: 24px !important;
+  max-height: 24px !important;
+  padding: 0 !important;
+  border: 1px solid rgba(0, 0, 0, 0.08) !important;
+  border-radius: 4px !important;
+  background: #ffffff !important;
+  background-color: #ffffff !important;
+  color: #6b7280 !important;
+  font-size: 14px !important;
+  font-weight: 400 !important;
+  line-height: 1 !important;
+  cursor: pointer !important;
+  overflow: visible !important;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08), 0 0 0 1px rgba(0, 0, 0, 0.04) !important;
   transition: background 0.1s ease, color 0.1s ease, border-color 0.1s ease;
+  flex-shrink: 0 !important;
+  fill: currentColor;
+  stroke: currentColor;
 }
 
+.uni-block-overlay .uni-plus-button:hover,
+.uni-block-overlay .uni-drag-handle:hover,
 .uni-plus-button:hover,
 .uni-drag-handle:hover {
-  background: #f3f4f6;
-  background: var(--uni-hover, #f3f4f6);
-  color: #1a1a1a;
-  color: var(--uni-fg, #1a1a1a);
+  background: #f3f4f6 !important;
+  background-color: #f3f4f6 !important;
+  color: #1a1a1a !important;
+  border-color: rgba(0, 0, 0, 0.12) !important;
 }
 
+.uni-block-overlay .uni-drag-handle,
 .uni-drag-handle {
-  cursor: grab;
+  cursor: grab !important;
 }
 
+.uni-block-overlay .uni-drag-handle:active,
 .uni-drag-handle:active {
-  cursor: grabbing;
+  cursor: grabbing !important;
 }
 
+.uni-block-overlay .uni-drag-handle[aria-expanded='true'],
+.uni-block-overlay .uni-drag-handle:focus-visible,
 .uni-drag-handle[aria-expanded='true'],
 .uni-drag-handle:focus-visible {
-  background: var(--uni-active, #e0e7ff);
-  color: var(--uni-accent, #4f46e5);
-  border-color: rgba(79, 70, 229, 0.35);
+  background: #e0e7ff !important;
+  background-color: #e0e7ff !important;
+  color: #4f46e5 !important;
+  border-color: rgba(79, 70, 229, 0.35) !important;
 }
 
-/* ─── Block more-menu (drag-handle click) ────────────────────────────── */
+.uni-block-overlay .uni-plus-button svg,
+.uni-block-overlay .uni-drag-handle svg,
+.uni-plus-button svg,
+.uni-drag-handle svg {
+  width: 14px !important;
+  height: 14px !important;
+  min-width: 14px !important;
+  min-height: 14px !important;
+  max-width: none !important;
+  max-height: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  pointer-events: none !important;
+}
+
+/* ─── Block more-menu ────────────────────────────────────────────────── */
 
 .uni-block-menu-root {
-  position: fixed;
-  inset: 0;
-  z-index: 10020;
-  pointer-events: none;
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 10020 !important;
+  pointer-events: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+  background: transparent !important;
 }
 
 .uni-block-menu {
-  pointer-events: auto;
-  min-width: 200px;
-  max-width: 260px;
-  padding: 6px;
-  border-radius: 10px;
-  background: #fff;
-  border: 1px solid var(--uni-border, #e5e7eb);
+  pointer-events: auto !important;
+  min-width: 200px !important;
+  max-width: 260px !important;
+  padding: 6px !important;
+  border-radius: 10px !important;
+  background: #fff !important;
+  border: 1px solid #e5e7eb !important;
   box-shadow:
     0 12px 40px rgba(15, 23, 42, 0.14),
-    0 2px 8px rgba(15, 23, 42, 0.06);
-  font-family: var(--uni-font);
-  color: var(--uni-fg, #1a1a1a);
+    0 2px 8px rgba(15, 23, 42, 0.06) !important;
+  font-family: var(--uni-font, system-ui, sans-serif) !important;
+  color: #1a1a1a !important;
+  margin: 0 !important;
+  opacity: 1 !important;
+  visibility: visible !important;
 }
 
 .uni-block-menu-header {
-  padding: 6px 10px 8px;
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--uni-muted, #6b7280);
+  display: block !important;
+  padding: 6px 10px 8px !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.04em !important;
+  text-transform: uppercase !important;
+  color: #6b7280 !important;
+  background: transparent !important;
+  border: none !important;
 }
 
 .uni-block-menu-divider {
-  height: 1px;
-  margin: 4px 6px;
-  background: var(--uni-border, #e5e7eb);
+  display: block !important;
+  height: 1px !important;
+  margin: 4px 6px !important;
+  padding: 0 !important;
+  background: #e5e7eb !important;
+  border: none !important;
 }
 
 .uni-block-menu-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  width: 100%;
-  padding: 8px 10px;
-  border: none;
-  border-radius: 6px;
-  background: transparent;
-  color: inherit;
-  font-size: 13px;
-  font-family: inherit;
-  text-align: left;
-  cursor: pointer;
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  width: 100% !important;
+  min-height: 36px !important;
+  padding: 8px 10px !important;
+  border: none !important;
+  border-radius: 6px !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  color: #1a1a1a !important;
+  font-size: 13px !important;
+  font-weight: 400 !important;
+  line-height: 1.3 !important;
+  text-align: left !important;
+  cursor: pointer !important;
 }
 
 .uni-block-menu-item:hover,
 .uni-block-menu-item-active {
-  background: var(--uni-hover, #f3f4f6);
+  background: #f3f4f6 !important;
+  background-color: #f3f4f6 !important;
 }
 
 .uni-block-menu-item-active {
-  color: var(--uni-accent, #4f46e5);
-  font-weight: 600;
+  color: #4f46e5 !important;
+  font-weight: 600 !important;
 }
 
 .uni-block-menu-item-danger {
-  color: #b91c1c;
+  color: #b91c1c !important;
 }
 
 .uni-block-menu-item-danger:hover {
-  background: #fef2f2;
+  background: #fef2f2 !important;
+  background-color: #fef2f2 !important;
 }
 
 .uni-block-menu-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 18px;
-  height: 18px;
-  flex-shrink: 0;
-  opacity: 0.85;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 18px !important;
+  height: 18px !important;
+  min-width: 18px !important;
+  flex-shrink: 0 !important;
+  opacity: 0.85 !important;
+  color: inherit !important;
 }
 
 .uni-block-menu-icon svg {
-  width: 18px;
-  height: 18px;
-  display: block;
+  width: 18px !important;
+  height: 18px !important;
+  min-width: 18px !important;
+  min-height: 18px !important;
+  max-width: none !important;
 }
 
 .uni-block-menu-label {
-  flex: 1;
-  min-width: 0;
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+  color: inherit !important;
+  font-size: inherit !important;
 }
 
 .uni-block-menu-chevron {
-  display: inline-flex;
-  opacity: 0.45;
+  display: inline-flex !important;
+  opacity: 0.45 !important;
+  flex-shrink: 0 !important;
 }
 
 .uni-block-menu-chevron svg {
-  width: 16px;
-  height: 16px;
+  width: 16px !important;
+  height: 16px !important;
+  min-width: 16px !important;
+  min-height: 16px !important;
+  max-width: none !important;
 }
 
 .uni-block-menu-color-grid {
-  display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  gap: 6px;
-  padding: 8px 10px 10px;
+  display: grid !important;
+  grid-template-columns: repeat(6, 1fr) !important;
+  gap: 6px !important;
+  padding: 8px 10px 10px !important;
 }
 
 .uni-block-menu-color-swatch {
-  width: 22px;
-  height: 22px;
-  border-radius: 4px;
-  border: 1px solid rgba(0, 0, 0, 0.12);
-  padding: 0;
-  cursor: pointer;
-  box-sizing: border-box;
+  width: 22px !important;
+  height: 22px !important;
+  min-width: 22px !important;
+  min-height: 22px !important;
+  border-radius: 4px !important;
+  border: 1px solid rgba(0, 0, 0, 0.12) !important;
+  padding: 0 !important;
+  cursor: pointer !important;
+  flex-shrink: 0 !important;
 }
 
 .uni-block-menu-color-swatch:hover {
   transform: scale(1.08);
-  box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.25);
+  box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.25) !important;
 }
 
 /* ─── Drop indicator ─────────────────────────────────────────────────── */
 
 .uni-drop-indicator {
-  height: 3px;
-  background: var(--uni-accent, #4f46e5);
-  border-radius: 999px;
-  pointer-events: none;
-  z-index: 10001;
+  position: fixed !important;
+  height: 3px !important;
+  background: #4f46e5 !important;
+  border-radius: 999px !important;
+  pointer-events: none !important;
+  z-index: 10001 !important;
+  opacity: 1 !important;
+  visibility: visible !important;
   box-shadow:
     0 0 0 2px rgba(79, 70, 229, 0.15),
-    0 1px 6px rgba(79, 70, 229, 0.35);
+    0 1px 6px rgba(79, 70, 229, 0.35) !important;
+  border: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
 }
 
 .uni-drop-indicator::before,
 .uni-drop-indicator::after {
-  content: '';
-  position: absolute;
-  top: 50%;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--uni-accent, #4f46e5);
+  content: '' !important;
+  position: absolute !important;
+  top: 50% !important;
+  width: 8px !important;
+  height: 8px !important;
+  border-radius: 50% !important;
+  background: #4f46e5 !important;
   transform: translateY(-50%);
-  box-shadow: 0 0 0 2px #fff;
+  box-shadow: 0 0 0 2px #fff !important;
+  display: block !important;
 }
 
 .uni-drop-indicator::before {
-  left: -2px;
+  left: -2px !important;
 }
 
 .uni-drop-indicator::after {
-  right: -2px;
+  right: -2px !important;
 }
-
-/* ─── Extended text formats ──────────────────────────────────────────── */
-
-.uni-text-highlight {
-  background: #fef08a;
-  border-radius: 2px;
-  padding: 0 2px;
-}
-.uni-text-subscript {
-  vertical-align: sub;
-  font-size: 0.75em;
-}
-.uni-text-superscript {
-  vertical-align: super;
-  font-size: 0.75em;
-}
-
-.uni-h4 { font-size: 1.125rem; font-weight: 600; margin: 0.25em 0; }
-.uni-h5 { font-size: 1rem; font-weight: 600; margin: 0.2em 0; }
-.uni-h6 { font-size: 0.875rem; font-weight: 600; margin: 0.2em 0; }
 
 /* ─── HR / Attachment / Container ────────────────────────────────────── */
 
+.uni-editor-content .uni-hr,
+.uni-editor-root .uni-hr,
 .uni-hr {
-  border: none;
-  border-top: 2px solid var(--uni-border, #e5e7eb);
-  margin: 1em 0;
+  display: block !important;
+  border: none !important;
+  border-top: 2px solid var(--uni-border, #e5e7eb) !important;
+  margin: 1em 0 !important;
+  padding: 0 !important;
+  height: 0 !important;
+  background: transparent !important;
+  overflow: hidden !important;
 }
 
+.uni-editor-content .uni-attachment,
+.uni-editor-root .uni-attachment,
 .uni-attachment {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 12px;
-  border: 1px solid var(--uni-border, #e5e7eb);
-  border-radius: 8px;
-  background: #fafafa;
-  color: var(--uni-accent, #4f46e5);
-  text-decoration: none;
-  font-size: 14px;
-  margin: 0.4em 0;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  padding: 8px 12px !important;
+  border: 1px solid var(--uni-border, #e5e7eb) !important;
+  border-radius: 8px !important;
+  background: #fafafa !important;
+  color: var(--uni-accent, #4f46e5) !important;
+  text-decoration: none !important;
+  font-size: 14px !important;
+  font-weight: 400 !important;
+  margin: 0.4em 0 !important;
+  line-height: 1.4 !important;
+  cursor: pointer !important;
 }
 
+.uni-editor-content .uni-container,
+.uni-editor-root .uni-container,
 .uni-container {
-  border: 1px solid var(--uni-border, #e5e7eb);
-  border-left: 4px solid var(--uni-accent, #4f46e5);
-  border-radius: 8px;
-  padding: 12px 14px;
-  margin: 0.5em 0;
-  background: #f8fafc;
+  display: block !important;
+  border: 1px solid var(--uni-border, #e5e7eb) !important;
+  border-left: 4px solid var(--uni-accent, #4f46e5) !important;
+  border-radius: 8px !important;
+  padding: 12px 14px !important;
+  margin: 0.5em 0 !important;
+  background: #f8fafc !important;
+  color: inherit !important;
 }
 
 /* ─── Table ──────────────────────────────────────────────────────────── */
 
+.uni-editor-content .uni-table,
+.uni-editor-root .uni-table,
 .uni-table {
-  border-collapse: collapse;
-  width: 100%;
-  margin: 0.5em 0;
-  table-layout: fixed;
+  border-collapse: collapse !important;
+  border-spacing: 0 !important;
+  width: 100% !important;
+  margin: 0.5em 0 !important;
+  table-layout: fixed !important;
+  background: transparent !important;
+  border: none !important;
 }
 
 .uni-table-cell,
 .uni-table-cell-header,
 .uni-table td,
-.uni-table th {
-  border: 1px solid var(--uni-border, #e5e7eb);
-  padding: 8px 10px;
-  min-width: 48px;
-  vertical-align: top;
+.uni-table th,
+.uni-editor-content .uni-table td,
+.uni-editor-content .uni-table th {
+  border: 1px solid var(--uni-border, #e5e7eb) !important;
+  padding: 8px 10px !important;
+  min-width: 48px !important;
+  vertical-align: top !important;
+  color: inherit !important;
+  font-size: inherit !important;
+  font-weight: 400 !important;
+  background: transparent !important;
+  text-align: left !important;
+  word-break: break-word;
 }
 
 .uni-table-cell-header,
-.uni-table th {
-  background: #f3f4f6;
-  font-weight: 600;
+.uni-table th,
+.uni-editor-content .uni-table th {
+  background: #f3f4f6 !important;
+  font-weight: 600 !important;
 }
 
 /* ─── Table grid picker ──────────────────────────────────────────────── */
 
 .uni-table-picker {
-  background: #fff;
-  border-radius: 10px;
-  padding: 12px 14px 14px;
-  width: 220px;
-  box-sizing: border-box;
-  user-select: none;
+  background: #fff !important;
+  border-radius: 10px !important;
+  padding: 12px 14px 14px !important;
+  width: 220px !important;
+  max-width: 220px !important;
+  box-sizing: border-box !important;
+  user-select: none !important;
+  color: #111827 !important;
+  margin: 0 !important;
+  border: none !important;
 }
 
 .uni-table-picker-title {
-  font-size: 13px;
-  font-weight: 600;
-  color: #111827;
-  margin-bottom: 4px;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  color: #111827 !important;
+  margin: 0 0 4px !important;
+  padding: 0 !important;
+  line-height: 1.3 !important;
 }
 
 .uni-table-picker-status {
-  font-size: 12px;
-  color: #6b7280;
-  margin-bottom: 10px;
+  font-size: 12px !important;
+  color: #6b7280 !important;
+  margin: 0 0 10px !important;
+  padding: 0 !important;
   font-variant-numeric: tabular-nums;
+  line-height: 1.3 !important;
 }
 
 .uni-table-picker-hint {
-  font-size: 11px;
-  color: #9ca3af;
-  margin-top: 10px;
+  font-size: 11px !important;
+  color: #9ca3af !important;
+  margin: 10px 0 0 !important;
+  padding: 0 !important;
+  line-height: 1.3 !important;
 }
 
 .uni-table-picker-grid {
-  display: grid;
-  gap: 4px;
-  width: 100%;
+  display: grid !important;
+  gap: 4px !important;
+  width: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+  background: transparent !important;
 }
 
 .uni-table-picker-cell {
-  width: 100%;
-  aspect-ratio: 1;
-  min-width: 0;
-  min-height: 0;
-  padding: 0;
-  border: 1px solid #d1d5db;
-  border-radius: 3px;
-  background: #fff;
-  cursor: crosshair;
+  width: 100% !important;
+  aspect-ratio: 1 !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  height: auto !important;
+  padding: 0 !important;
+  border: 1px solid #d1d5db !important;
+  border-radius: 3px !important;
+  background: #fff !important;
+  background-color: #fff !important;
+  cursor: crosshair !important;
   transition: background 0.08s ease, border-color 0.08s ease;
+  display: block !important;
 }
 
 .uni-table-picker-cell-active {
-  background: #c7d2fe;
-  border-color: #4f46e5;
-  box-shadow: inset 0 0 0 1px rgba(79, 70, 229, 0.25);
+  background: #c7d2fe !important;
+  background-color: #c7d2fe !important;
+  border-color: #4f46e5 !important;
+  box-shadow: inset 0 0 0 1px rgba(79, 70, 229, 0.25) !important;
 }
 
 /* tippy.js UniLexical theme */
 .tippy-box[data-theme~='unilexical'] {
-  background: #fff;
-  color: #111827;
-  border: 1px solid #e5e7eb;
-  border-radius: 10px;
-  box-shadow: 0 10px 40px rgba(15, 23, 42, 0.12), 0 2px 8px rgba(15, 23, 42, 0.06);
-  font-size: 12px;
-  font-weight: 500;
+  background: #fff !important;
+  color: #111827 !important;
+  border: 1px solid #e5e7eb !important;
+  border-radius: 10px !important;
+  box-shadow: 0 10px 40px rgba(15, 23, 42, 0.12), 0 2px 8px rgba(15, 23, 42, 0.06) !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  opacity: 1 !important;
+  visibility: visible !important;
 }
 
 .tippy-box[data-theme~='unilexical'][data-placement^='top'] > .tippy-arrow::before {
-  border-top-color: #fff;
+  border-top-color: #fff !important;
 }
 .tippy-box[data-theme~='unilexical'][data-placement^='bottom'] > .tippy-arrow::before {
-  border-bottom-color: #fff;
+  border-bottom-color: #fff !important;
 }
 .tippy-box[data-theme~='unilexical'] > .tippy-arrow::before {
-  color: #fff;
+  color: #fff !important;
 }
 .tippy-box[data-theme~='unilexical'] .tippy-content {
-  padding: 6px 10px;
+  padding: 6px 10px !important;
+  color: inherit !important;
 }
-/* Interactive popovers: no extra content padding (panel has its own) */
 .tippy-box[data-theme~='unilexical'][data-interactive] .tippy-content {
-  padding: 0;
+  padding: 0 !important;
 }
 
-/* Code highlight tokens (lowlight / highlight.js) */
+/* Code highlight tokens */
 .uni-code-block .uni-token-keyword,
-.uni-token-keyword { color: #7c3aed; }
-.uni-token-string { color: #059669; }
-.uni-token-number { color: #d97706; }
-.uni-token-comment { color: #9ca3af; font-style: italic; }
-.uni-token-function { color: #2563eb; }
+.uni-token-keyword { color: #7c3aed !important; }
+.uni-token-string { color: #059669 !important; }
+.uni-token-number { color: #d97706 !important; }
+.uni-token-comment { color: #9ca3af !important; font-style: italic !important; }
+.uni-token-function { color: #2563eb !important; }
 .uni-token-class-name,
-.uni-token-title { color: #db2777; }
+.uni-token-title { color: #db2777 !important; }
 .uni-token-built_in,
-.uni-token-builtin { color: #0891b2; }
-.uni-token-attr { color: #ea580c; }
-.uni-token-literal { color: #7c3aed; }
-.uni-token-meta { color: #6b7280; }
-.uni-token-punctuation { color: #6b7280; }
+.uni-token-builtin { color: #0891b2 !important; }
+.uni-token-attr { color: #ea580c !important; }
+.uni-token-literal { color: #7c3aed !important; }
+.uni-token-meta { color: #6b7280 !important; }
+.uni-token-punctuation { color: #6b7280 !important; }
 
 /* ─── Toolbar popovers ───────────────────────────────────────────────── */
 
 .uni-toolbar-popover {
-  background: #fff;
-  border: 1px solid #e5e7eb;
-  border-radius: 10px;
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
-  padding: 6px;
-  max-height: 280px;
-  overflow: auto;
+  background: #fff !important;
+  border: 1px solid #e5e7eb !important;
+  border-radius: 10px !important;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12) !important;
+  padding: 6px !important;
+  max-height: 280px !important;
+  overflow: auto !important;
+  margin: 0 !important;
+  color: #1a1a1a !important;
+  opacity: 1 !important;
+  visibility: visible !important;
 }
 
 .uni-toolbar-popover-item {
-  display: block;
-  width: 100%;
-  text-align: left;
-  border: none;
-  background: transparent;
-  padding: 8px 10px;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 13px;
-  font-family: inherit;
+  display: block !important;
+  width: 100% !important;
+  text-align: left !important;
+  border: none !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  padding: 8px 10px !important;
+  border-radius: 6px !important;
+  cursor: pointer !important;
+  font-size: 13px !important;
+  font-weight: 400 !important;
+  line-height: 1.3 !important;
+  color: #1a1a1a !important;
+  min-height: 34px !important;
 }
 
 .uni-toolbar-popover-item:hover {
-  background: #f3f4f6;
+  background: #f3f4f6 !important;
+  background-color: #f3f4f6 !important;
 }
 
 .uni-color-grid,
 .uni-emoji-grid {
-  display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  gap: 4px;
-  padding: 4px;
+  display: grid !important;
+  grid-template-columns: repeat(6, 1fr) !important;
+  gap: 4px !important;
+  padding: 4px !important;
+  margin: 0 !important;
+  border: none !important;
+  background: transparent !important;
 }
 
 .uni-color-swatch {
-  width: 22px;
-  height: 22px;
-  border: 1px solid #d1d5db;
-  border-radius: 4px;
-  cursor: pointer;
-  padding: 0;
+  width: 22px !important;
+  height: 22px !important;
+  min-width: 22px !important;
+  min-height: 22px !important;
+  border: 1px solid #d1d5db !important;
+  border-radius: 4px !important;
+  cursor: pointer !important;
+  padding: 0 !important;
+  display: inline-block !important;
+  flex-shrink: 0 !important;
 }
 
 .uni-emoji-btn {
-  border: none;
-  background: transparent;
-  font-size: 18px;
-  cursor: pointer;
-  border-radius: 6px;
-  padding: 4px;
+  border: none !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  font-size: 18px !important;
+  line-height: 1 !important;
+  cursor: pointer !important;
+  border-radius: 6px !important;
+  padding: 4px !important;
+  min-width: 28px !important;
+  min-height: 28px !important;
+  color: inherit !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
 }
 
 .uni-emoji-btn:hover {
-  background: #f3f4f6;
-}
-
-.uni-toolbar-btn-color {
-  flex-direction: column;
-  gap: 1px;
-  padding-bottom: 3px;
-  height: 32px;
-}
-
-.uni-toolbar-btn-color .uni-toolbar-icon {
-  width: 18px;
-  height: 18px;
-}
-
-.uni-toolbar-btn-color .uni-toolbar-icon svg {
-  width: 18px;
-  height: 18px;
-}
-
-.uni-toolbar-color-bar {
-  display: block;
-  width: 16px;
-  height: 3px;
-  border-radius: 1px;
-  background: currentColor;
-  flex-shrink: 0;
-}
-
-.uni-toolbar-group {
-  width: 6px;
+  background: #f3f4f6 !important;
+  background-color: #f3f4f6 !important;
 }
 
 /* ─── Fullscreen / Source ────────────────────────────────────────────── */
 
 .uni-editor-root.uni-fullscreen {
   position: fixed !important;
-  inset: 0;
-  z-index: 9999;
-  border-radius: 0;
-  max-width: none;
-  background: #fff;
+  inset: 0 !important;
+  z-index: 9999 !important;
+  border-radius: 0 !important;
+  max-width: none !important;
+  width: 100% !important;
+  height: 100% !important;
+  background: #fff !important;
 }
 
 .uni-editor-root.uni-fullscreen .uni-editor-content {
-  min-height: calc(100vh - 60px);
+  min-height: calc(100vh - 60px) !important;
 }
 
 .uni-source-overlay {
-  display: flex;
-  flex-direction: column;
-  min-height: 240px;
-  border-top: 1px solid var(--uni-border, #e5e7eb);
+  display: flex !important;
+  flex-direction: column !important;
+  min-height: 240px !important;
+  border: none !important;
+  border-top: 1px solid var(--uni-border, #e5e7eb) !important;
+  background: #fff !important;
+  margin: 0 !important;
+  padding: 0 !important;
 }
 
 .uni-source-bar {
-  display: flex;
-  gap: 8px;
-  padding: 8px 10px;
-  border-bottom: 1px solid var(--uni-border, #e5e7eb);
-  background: #fafafa;
+  display: flex !important;
+  gap: 8px !important;
+  padding: 8px 10px !important;
+  border: none !important;
+  border-bottom: 1px solid var(--uni-border, #e5e7eb) !important;
+  background: #fafafa !important;
+  margin: 0 !important;
+  align-items: center !important;
 }
 
 .uni-source-bar button {
-  border: 1px solid #e5e7eb;
-  background: #fff;
-  border-radius: 6px;
-  padding: 4px 10px;
-  cursor: pointer;
-  font-size: 13px;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border: 1px solid #e5e7eb !important;
+  background: #fff !important;
+  background-color: #fff !important;
+  border-radius: 6px !important;
+  padding: 4px 10px !important;
+  cursor: pointer !important;
+  font-size: 13px !important;
+  font-weight: 400 !important;
+  line-height: 1.3 !important;
+  color: #1a1a1a !important;
+  min-height: 28px !important;
+}
+
+.uni-source-bar button:hover {
+  background: #f3f4f6 !important;
+  background-color: #f3f4f6 !important;
 }
 
 .uni-source-textarea {
-  flex: 1;
-  min-height: 280px;
-  border: none;
-  padding: 12px 14px;
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 13px;
-  line-height: 1.5;
-  resize: vertical;
-  outline: none;
+  display: block !important;
+  flex: 1 1 auto !important;
+  width: 100% !important;
+  min-height: 280px !important;
+  border: none !important;
+  padding: 12px 14px !important;
+  margin: 0 !important;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace !important;
+  font-size: 13px !important;
+  line-height: 1.5 !important;
+  color: #1a1a1a !important;
+  background: #fff !important;
+  resize: vertical !important;
+  outline: none !important;
+  -webkit-appearance: none !important;
+  appearance: none !important;
+  box-shadow: none !important;
 }
 
-/* Checklist / Todo list (Lexical check list) */
+/* Checklist / Todo list — must beat restored disc/decimal rules */
+.uni-editor-content .uni-checklist,
+.uni-editor-root .uni-checklist,
+.uni-editor-content ul.uni-checklist,
+.uni-editor-root ul.uni-checklist,
+.uni-editor-content .uni-ul.uni-checklist,
+.uni-editor-root .uni-ul.uni-checklist,
 .uni-checklist,
 ul.uni-checklist,
 .uni-ul.uni-checklist {
   list-style: none !important;
   list-style-type: none !important;
-  padding-left: 0.15em;
-  margin: 0.25em 0;
+  padding-left: 0.15em !important;
+  margin: 0.25em 0 !important;
 }
 
+.uni-editor-content .uni-li.uni-li-checked,
+.uni-editor-content .uni-li.uni-li-unchecked,
+.uni-editor-root .uni-li.uni-li-checked,
+.uni-editor-root .uni-li.uni-li-unchecked,
 .uni-li.uni-li-checked,
 .uni-li.uni-li-unchecked,
 li.uni-li-checked,
 li.uni-li-unchecked {
-  position: relative;
-  margin: 0.25em 0;
-  padding: 0.1em 0 0.1em 1.85em;
+  position: relative !important;
+  display: list-item !important;
+  margin: 0.25em 0 !important;
+  padding: 0.1em 0 0.1em 1.85em !important;
   list-style: none !important;
   list-style-type: none !important;
-  outline: none;
-  min-height: 1.65em;
-  line-height: 1.55;
-  cursor: text;
+  outline: none !important;
+  min-height: 1.65em !important;
+  line-height: 1.55 !important;
+  cursor: text !important;
+  background: transparent !important;
 }
 
-/* Checkbox square (gutter) — high-contrast so empty todos are obvious */
+.uni-editor-content .uni-li-checked::marker,
+.uni-editor-content .uni-li-unchecked::marker,
+.uni-editor-root .uni-li-checked::marker,
+.uni-editor-root .uni-li-unchecked::marker,
+.uni-li-checked::marker,
+.uni-li-unchecked::marker {
+  content: none !important;
+  font-size: 0 !important;
+}
+
 .uni-li-unchecked::before,
 .uni-li-checked::before,
 li.uni-li-unchecked::before,
 li.uni-li-checked::before {
-  content: '';
-  position: absolute;
-  left: 0.15em;
-  top: 0.28em;
-  width: 18px;
-  height: 18px;
-  border: 2px solid #6b7280;
-  border-radius: 4px;
-  background: #fff;
-  box-sizing: border-box;
-  cursor: pointer;
+  content: '' !important;
+  position: absolute !important;
+  left: 0.15em !important;
+  top: 0.28em !important;
+  width: 18px !important;
+  height: 18px !important;
+  border: 2px solid #6b7280 !important;
+  border-radius: 4px !important;
+  background: #fff !important;
+  box-sizing: border-box !important;
+  cursor: pointer !important;
   box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.04);
   transition: border-color 0.12s ease, background 0.12s ease, box-shadow 0.12s ease;
+  display: block !important;
+  padding: 0 !important;
+  margin: 0 !important;
 }
 
 .uni-li-checked::before,
 li.uni-li-checked::before {
-  border-color: var(--uni-accent, #4f46e5);
-  background: var(--uni-accent, #4f46e5);
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='white' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3.5 8.5l3 3 6-6'/%3E%3C/svg%3E");
-  background-size: 12px 12px;
-  background-position: center;
-  background-repeat: no-repeat;
-  box-shadow: none;
+  border-color: var(--uni-accent, #4f46e5) !important;
+  background: var(--uni-accent, #4f46e5) !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='white' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3.5 8.5l3 3 6-6'/%3E%3C/svg%3E") !important;
+  background-size: 12px 12px !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  box-shadow: none !important;
 }
 
 .uni-li-checked,
 li.uni-li-checked {
-  text-decoration: line-through;
-  color: var(--uni-muted, #6b7280);
+  text-decoration: line-through !important;
+  color: var(--uni-muted, #6b7280) !important;
 }
 
 .uni-li-unchecked:hover::before,
 li.uni-li-unchecked:hover::before {
-  border-color: var(--uni-accent, #4f46e5);
-  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12);
+  border-color: var(--uni-accent, #4f46e5) !important;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12) !important;
 }
 
-/* Empty todo placeholder (li only has Lexical <br>) */
 .uni-li-unchecked:has(> br:only-child)::after,
 .uni-li-unchecked:has(> span[data-lexical-text]:only-child:empty)::after {
-  content: 'To-do';
-  color: var(--uni-muted, #9ca3af);
-  pointer-events: none;
-  user-select: none;
+  content: 'To-do' !important;
+  color: var(--uni-muted, #9ca3af) !important;
+  pointer-events: none !important;
+  user-select: none !important;
+  font-weight: 400 !important;
+  font-style: normal !important;
+}
+
+/* ─── Toggle (collapsible) ───────────────────────────────────────────── */
+
+.uni-editor-content .uni-toggle,
+.uni-editor-root .uni-toggle,
+.uni-toggle {
+  display: block !important;
+  position: relative !important;
+  margin: 0.5em 0 !important;
+  padding: 0 !important;
+  border: 1px solid #e5e7eb !important;
+  background: #fafafa !important;
+  border-radius: 10px !important;
+  overflow: hidden !important;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+/* Title row (first child) — visually distinct header */
+.uni-toggle > :first-child {
+  position: relative !important;
+  padding: 10px 12px 10px 2.25em !important;
+  min-height: 2.4em !important;
+  margin: 0 !important;
+  cursor: text;
+  font-weight: 600 !important;
+  font-size: 0.98em !important;
+  line-height: 1.45 !important;
+  color: #111827 !important;
+  background: #ffffff !important;
+  border-bottom: 1px solid transparent !important;
+}
+
+.uni-toggle[data-open='true'] > :first-child {
+  border-bottom-color: #e5e7eb !important;
+}
+
+.uni-toggle > :first-child::before {
+  content: '' !important;
+  position: absolute !important;
+  left: 0.55em !important;
+  top: 50% !important;
+  width: 1.35em !important;
+  height: 1.35em !important;
+  margin-top: -0.675em !important;
+  display: block !important;
+  box-sizing: border-box !important;
+  border-radius: 6px !important;
+  background-color: #f3f4f6 !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%234b5563'%3E%3Cpath d='M9.29 6.71a.996.996 0 0 0 0 1.41L13.17 12l-3.88 3.88a.996.996 0 1 0 1.41 1.41l4.59-4.59a.996.996 0 0 0 0-1.41L10.7 6.7c-.38-.38-1.02-.38-1.41.01z'/%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: center !important;
+  background-size: 16px 16px !important;
+  cursor: pointer !important;
+  user-select: none !important;
+  transition: transform 0.15s ease, background-color 0.12s ease;
+  transform: rotate(0deg);
+}
+
+.uni-toggle[data-open='true'] > :first-child::before {
+  transform: rotate(90deg);
+  background-color: #e0e7ff !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%234f46e5'%3E%3Cpath d='M9.29 6.71a.996.996 0 0 0 0 1.41L13.17 12l-3.88 3.88a.996.996 0 1 0 1.41 1.41l4.59-4.59a.996.996 0 0 0 0-1.41L10.7 6.7c-.38-.38-1.02-.38-1.41.01z'/%3E%3C/svg%3E") !important;
+}
+
+.uni-toggle > :first-child:hover::before {
+  background-color: #e5e7eb !important;
+}
+
+/* Body content */
+.uni-toggle[data-open='false'] > :not(:first-child) {
+  display: none !important;
+}
+
+.uni-toggle[data-open='true'] > :not(:first-child) {
+  margin: 0 !important;
+  padding: 10px 14px 12px 2.25em !important;
+  background: #f9fafb !important;
+  color: #374151 !important;
+  font-weight: 400 !important;
+  border-top: none !important;
+}
+
+.uni-toggle[data-open='true'] > :not(:first-child) + :not(:first-child) {
+  padding-top: 4px !important;
+  border-top: 1px dashed #e5e7eb !important;
+}
+
+/* ─── Inline DateTime chip ───────────────────────────────────────────── */
+
+.uni-editor-content .uni-datetime,
+.uni-editor-root .uni-datetime,
+.uni-datetime,
+[data-uni-datetime] {
+  display: inline-flex !important;
+  align-items: center !important;
+  vertical-align: baseline !important;
+  padding: 0.1em 0.45em !important;
+  margin: 0 0.15em !important;
+  border-radius: 6px !important;
+  background: #eef2ff !important;
+  color: #4338ca !important;
+  font-size: 0.92em !important;
+  font-weight: 550 !important;
+  font-family: inherit !important;
+  line-height: 1.4 !important;
+  border: 1px solid #c7d2fe !important;
+  cursor: pointer !important;
+  user-select: none !important;
+  white-space: nowrap !important;
+  box-shadow: none !important;
+}
+
+.uni-datetime:hover,
+[data-uni-datetime]:hover {
+  background: #e0e7ff !important;
+  border-color: #a5b4fc !important;
+}
+
+.uni-datetime-picker {
+  position: fixed !important;
+  z-index: 10060 !important;
+  width: 260px !important;
+  padding: 12px !important;
+  border-radius: 10px !important;
+  background: #fff !important;
+  border: 1px solid #e5e7eb !important;
+  box-shadow: 0 12px 40px rgba(15, 23, 42, 0.14) !important;
+  font-family: var(--uni-font, system-ui, sans-serif) !important;
+  color: #1a1a1a !important;
+}
+
+.uni-datetime-picker-title {
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  margin: 0 0 10px !important;
+}
+
+.uni-datetime-picker-label {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 4px !important;
+  font-size: 12px !important;
+  color: #6b7280 !important;
+  margin-bottom: 8px !important;
+}
+
+.uni-datetime-picker-input {
+  -webkit-appearance: none !important;
+  appearance: none !important;
+  border: 1px solid #d1d5db !important;
+  border-radius: 6px !important;
+  padding: 6px 8px !important;
+  font-size: 13px !important;
+  font-family: inherit !important;
+  color: #1a1a1a !important;
+  background: #fff !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+.uni-datetime-picker-check {
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  font-size: 13px !important;
+  margin: 4px 0 10px !important;
+  cursor: pointer !important;
+  color: #374151 !important;
+}
+
+.uni-datetime-picker-actions {
+  display: flex !important;
+  justify-content: flex-end !important;
+  gap: 8px !important;
+}
+
+.uni-datetime-picker-btn {
+  -webkit-appearance: none !important;
+  appearance: none !important;
+  border: 1px solid #e5e7eb !important;
+  background: #fff !important;
+  border-radius: 6px !important;
+  padding: 6px 10px !important;
+  font-size: 13px !important;
+  cursor: pointer !important;
+  color: #1a1a1a !important;
+  font-family: inherit !important;
+}
+
+.uni-datetime-picker-btn-primary {
+  background: #4f46e5 !important;
+  border-color: #4f46e5 !important;
+  color: #fff !important;
+}
+
+/* ─── Container / callout variants + icon ────────────────────────────── */
+
+.uni-editor-content .uni-container,
+.uni-editor-root .uni-container,
+.uni-container {
+  position: relative !important;
+  display: block !important;
+  border: 1px solid var(--uni-border, #e5e7eb) !important;
+  border-left: 4px solid var(--uni-accent, #4f46e5) !important;
+  border-radius: 8px !important;
+  padding: 12px 14px 12px 44px !important;
+  margin: 0.5em 0 !important;
+  background: #f8fafc !important;
+  color: inherit !important;
+}
+
+.uni-container-icon {
+  position: absolute !important;
+  left: 10px !important;
+  top: 12px !important;
+  width: 28px !important;
+  height: 28px !important;
+  min-width: 28px !important;
+  min-height: 28px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border: none !important;
+  background: rgba(255, 255, 255, 0.7) !important;
+  border-radius: 8px !important;
+  font-size: 16px !important;
+  line-height: 0 !important;
+  color: inherit !important;
+  cursor: pointer !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  z-index: 1 !important;
+  -webkit-appearance: none !important;
+  appearance: none !important;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.06) !important;
+}
+
+.uni-container-icon svg {
+  width: 18px !important;
+  height: 18px !important;
+  min-width: 18px !important;
+  min-height: 18px !important;
+  max-width: none !important;
+  display: block !important;
+  pointer-events: none !important;
+}
+
+.uni-container-icon:hover {
+  background: #fff !important;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.1) !important;
+}
+
+.uni-container--default .uni-container-icon { color: #4f46e5 !important; }
+.uni-container--info .uni-container-icon { color: #2563eb !important; }
+.uni-container--warning .uni-container-icon { color: #d97706 !important; }
+.uni-container--success .uni-container-icon { color: #059669 !important; }
+.uni-container--error .uni-container-icon { color: #dc2626 !important; }
+.uni-container--gray .uni-container-icon { color: #6b7280 !important; }
+
+.uni-container--default {
+  border-left-color: #4f46e5 !important;
+  background: #f8fafc !important;
+}
+.uni-container--info {
+  border-left-color: #2563eb !important;
+  background: #eff6ff !important;
+}
+.uni-container--warning {
+  border-left-color: #d97706 !important;
+  background: #fffbeb !important;
+}
+.uni-container--success {
+  border-left-color: #059669 !important;
+  background: #ecfdf5 !important;
+}
+.uni-container--error {
+  border-left-color: #dc2626 !important;
+  background: #fef2f2 !important;
+}
+.uni-container--gray {
+  border-left-color: #6b7280 !important;
+  background: #f3f4f6 !important;
+}
+
+/* ─── Table action bar ───────────────────────────────────────────────── */
+
+.uni-table-action-bar {
+  position: fixed !important;
+  z-index: 10055 !important;
+  display: none;
+  flex-wrap: wrap !important;
+  align-items: center !important;
+  gap: 4px !important;
+  padding: 4px 6px !important;
+  border-radius: 8px !important;
+  background: #fff !important;
+  border: 1px solid #e5e7eb !important;
+  box-shadow: 0 8px 28px rgba(15, 23, 42, 0.12) !important;
+  font-family: var(--uni-font, system-ui, sans-serif) !important;
+  max-width: calc(100vw - 16px);
+}
+
+.uni-table-action-btn {
+  -webkit-appearance: none !important;
+  appearance: none !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border: none !important;
+  background: transparent !important;
+  border-radius: 5px !important;
+  padding: 4px 8px !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  color: #374151 !important;
+  cursor: pointer !important;
+  font-family: inherit !important;
+  white-space: nowrap !important;
+  line-height: 1.2 !important;
+  min-height: 26px !important;
+}
+
+.uni-table-action-btn:hover {
+  background: #f3f4f6 !important;
+  color: #111827 !important;
+}
+
+.uni-table-action-btn-danger {
+  color: #b91c1c !important;
+}
+
+.uni-table-action-btn-danger:hover {
+  background: #fef2f2 !important;
+}
+
+/* ─── Image align / resize / toolbar ─────────────────────────────────── */
+
+.uni-image-wrap.uni-image-align-left {
+  margin-left: 0 !important;
+  margin-right: auto !important;
+  text-align: left !important;
+}
+
+.uni-image-wrap.uni-image-align-center {
+  margin-left: auto !important;
+  margin-right: auto !important;
+  text-align: center !important;
+}
+
+.uni-image-wrap.uni-image-align-right {
+  margin-left: auto !important;
+  margin-right: 0 !important;
+  text-align: right !important;
+}
+
+.uni-image-wrap.uni-image-display-inline {
+  display: inline-block !important;
+  vertical-align: middle !important;
+  margin: 0 0.35em !important;
+  max-width: 40% !important;
+}
+
+.uni-image-wrap.uni-image-display-block {
+  display: block !important;
+}
+
+.uni-image-frame {
+  position: relative !important;
+  display: inline-block !important;
+  max-width: 100% !important;
+  line-height: 0 !important;
+}
+
+.uni-image-selected .uni-image-frame {
+  outline: 2px solid #4f46e5 !important;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.uni-image-resize-handle {
+  position: absolute !important;
+  z-index: 2 !important;
+  width: 10px !important;
+  height: 10px !important;
+  background: #4f46e5 !important;
+  border: 2px solid #fff !important;
+  border-radius: 50% !important;
+  box-shadow: 0 0 0 1px rgba(79, 70, 229, 0.4) !important;
+  display: none !important;
+  pointer-events: auto !important;
+  box-sizing: border-box !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+.uni-image-selected .uni-image-resize-handle {
+  display: block !important;
+}
+
+.uni-image-resize-e {
+  right: -5px !important;
+  top: 50% !important;
+  transform: translateY(-50%);
+  cursor: ew-resize !important;
+}
+
+.uni-image-resize-se {
+  right: -5px !important;
+  bottom: -5px !important;
+  cursor: nwse-resize !important;
+}
+
+.uni-image-toolbar {
+  position: fixed !important;
+  z-index: 10060 !important;
+  display: none;
+  flex-wrap: wrap !important;
+  align-items: center !important;
+  gap: 6px !important;
+  padding: 6px 8px !important;
+  border-radius: 8px !important;
+  background: #fff !important;
+  border: 1px solid #e5e7eb !important;
+  box-shadow: 0 8px 28px rgba(15, 23, 42, 0.16) !important;
+  font-family: var(--uni-font, system-ui, sans-serif) !important;
+  max-width: calc(100vw - 16px);
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+}
+
+.uni-image-toolbar-group {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 2px !important;
+  padding-right: 6px !important;
+  border-right: 1px solid #e5e7eb !important;
+}
+
+.uni-image-toolbar-group:last-of-type {
+  border-right: none !important;
+}
+
+.uni-image-toolbar-label {
+  font-size: 10px !important;
+  font-weight: 600 !important;
+  color: #9ca3af !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.04em !important;
+  margin-right: 4px !important;
+}
+
+.uni-image-toolbar-btn {
+  -webkit-appearance: none !important;
+  appearance: none !important;
+  border: none !important;
+  background: transparent !important;
+  border-radius: 5px !important;
+  padding: 4px 6px !important;
+  font-size: 12px !important;
+  cursor: pointer !important;
+  color: #374151 !important;
+  font-family: inherit !important;
+  line-height: 1.2 !important;
+  min-height: 26px !important;
+}
+
+.uni-image-toolbar-btn:hover {
+  background: #f3f4f6 !important;
+}
+
+.uni-image-toolbar-btn-danger {
+  color: #b91c1c !important;
+}
+
+.uni-image-toolbar-btn-danger:hover {
+  background: #fef2f2 !important;
 }
 
 @media print {
@@ -1055,10 +2117,15 @@ li.uni-li-unchecked:hover::before {
   .uni-block-menu-root,
   .uni-slash-menu,
   .uni-toolbar-popover,
-  .uni-table-picker {
+  .uni-table-picker,
+  .uni-drop-indicator,
+  .uni-table-action-bar,
+  .uni-image-toolbar,
+  .uni-datetime-picker,
+  .uni-image-resize-handle {
     display: none !important;
   }
   .uni-editor-root {
-    border: none;
+    border: none !important;
   }
 }
