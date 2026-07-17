@@ -865,10 +865,13 @@ li.uni-li,
 
 /* ─── Block overlay (drag + plus) ────────────────────────────────────── */
 
-.uni-block-overlay,
-.uni-editor-root > .uni-block-overlay,
-body > .uni-block-overlay {
-  position: fixed !important;
+/*
+ * Overlay positioning:
+ * - Under .uni-editor-root → absolute (correct inside transformed dialogs)
+ * - Direct child of body → fixed to viewport
+ * JS may also set position via setProperty(..., 'important').
+ */
+.uni-block-overlay {
   z-index: 10050 !important;
   display: flex;
   align-items: center !important;
@@ -882,9 +885,18 @@ body > .uni-block-overlay {
   border: none !important;
   background: transparent !important;
   isolation: isolate;
-  transform: none;
-  filter: none;
+  /* Do NOT set transform/filter here — that would create a nested containing block */
   contain: none;
+}
+
+.uni-editor-root > .uni-block-overlay,
+.uni-block-overlay[data-uni-overlay-mode='absolute'] {
+  position: absolute !important;
+}
+
+body > .uni-block-overlay,
+.uni-block-overlay[data-uni-overlay-mode='fixed'] {
+  position: fixed !important;
 }
 
 .uni-block-overlay .uni-plus-button,

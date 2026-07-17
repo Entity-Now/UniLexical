@@ -29,11 +29,17 @@ export class BlockOverlayUI {
   private didDrag = false;
   private menu: BlockMenuUI;
   private host: HTMLElement;
+  /**
+   * When true, overlay is `position:absolute` inside the editor root.
+   * Required for dialogs/modals that use `transform` (creates a fixed containing
+   * block — viewport-based fixed coords then misalign).
+   */
+  private useHostRelative: boolean;
 
   /**
    * @param host Mount target for the floating overlay. Prefer the editor root
-   *   (`.uni-editor-root`) so the overlay participates in the same stacking
-   *   context as dialogs/modals that wrap the editor. Falls back to `document.body`.
+   *   (`.uni-editor-root`) so the overlay shares dialog stacking + transform
+   *   contexts. Falls back to `document.body` (viewport-fixed).
    */
   constructor(
     private overlay: BlockOverlayController,
@@ -42,14 +48,27 @@ export class BlockOverlayUI {
   ) {
     this.menu = new BlockMenuUI(overlay);
     this.host = host ?? document.body;
+    this.useHostRelative = this.host !== document.body;
+
+    // Editor root must be a positioning context for absolute overlay
+    if (this.useHostRelative) {
+      const cs = window.getComputedStyle(this.host);
+      if (cs.position === 'static') {
+        this.host.style.position = 'relative';
+      }
+    }
 
     this.root = document.createElement('div');
     this.root.className = 'uni-block-overlay';
     this.root.setAttribute('data-uni-overlay', 'true');
+    if (this.useHostRelative) {
+      this.root.setAttribute('data-uni-overlay-mode', 'absolute');
+    }
     // Inline critical geometry so host CSS cannot zero-out the chrome
+    const position = this.useHostRelative ? 'absolute' : 'fixed';
     this.root.style.cssText = [
       'display:none',
-      'position:fixed',
+      `position:${position}`,
       'z-index:10050',
       'pointer-events:auto',
       'opacity:1',
@@ -180,19 +199,54 @@ export class BlockOverlayUI {
     this.cancelHide();
     this.activeBlockId = payload.blockId;
     this.root.style.display = 'flex';
+    this.positionBesideBlock(payload.rect);
+  }
 
-    const { rect } = payload;
-    // Prefer the left gutter (content has ~56px padding). Keep fully on-screen.
+  /**
+   * Place overlay in the left gutter of the hovered block.
+   *
+   * - Host-relative (editor root): `position:absolute` using offsets from the
+   *   host's border box. Survives dialog `transform` / filter containing blocks.
+   * - Body: `position:fixed` with viewport coordinates.
+   */
+  private positionBesideBlock(rect: DOMRect): void {
     const overlayWidth = 52;
+    const height = Math.max(24, Math.min(rect.height, 40));
+    this.root.style.height = `${height}px`;
+    this.root.style.zIndex = '10050';
+
+    if (this.useHostRelative) {
+      this.root.style.setProperty('position', 'absolute', 'important');
+      const hostRect = this.host.getBoundingClientRect();
+      // Convert viewport rect → coordinates relative to host padding edge
+      let left = rect.left - hostRect.left - overlayWidth;
+      let top = rect.top - hostRect.top + 2;
+
+      // If host itself scrolls (rare), add scroll offsets
+      left += this.host.scrollLeft;
+      top += this.host.scrollTop;
+
+      // Keep inside host horizontally when possible (gutter may be tight)
+      const minLeft = 2;
+      const maxLeft = Math.max(minLeft, this.host.clientWidth - overlayWidth - 2);
+      left = Math.min(maxLeft, Math.max(minLeft, left));
+      top = Math.max(0, top);
+
+      this.root.style.left = `${Math.round(left)}px`;
+      this.root.style.top = `${Math.round(top)}px`;
+      this.root.style.right = 'auto';
+      this.root.style.bottom = 'auto';
+      return;
+    }
+
+    // Viewport-fixed (body mount)
+    this.root.style.setProperty('position', 'fixed', 'important');
     const preferredLeft = rect.left - overlayWidth;
     const maxLeft = Math.max(4, window.innerWidth - overlayWidth - 4);
     const left = Math.min(maxLeft, Math.max(4, preferredLeft));
     const top = Math.max(4, Math.min(rect.top + 2, window.innerHeight - 28));
-
-    this.root.style.top = `${top}px`;
-    this.root.style.left = `${left}px`;
-    this.root.style.height = `${Math.max(24, Math.min(rect.height, 40))}px`;
-    this.root.style.zIndex = '10050';
+    this.root.style.left = `${Math.round(left)}px`;
+    this.root.style.top = `${Math.round(top)}px`;
   }
 
   private scheduleHide(): void {
