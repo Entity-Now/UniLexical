@@ -82,6 +82,7 @@ export class BlockOverlayUI {
 
     this.plusBtn = document.createElement('button');
     this.plusBtn.type = 'button';
+    this.plusBtn.tabIndex = -1;
     this.plusBtn.className = 'uni-plus-button';
     this.plusBtn.title = 'Add block';
     this.plusBtn.setAttribute('aria-label', 'Add block');
@@ -108,6 +109,7 @@ export class BlockOverlayUI {
 
     this.dragBtn = document.createElement('button');
     this.dragBtn.type = 'button';
+    this.dragBtn.tabIndex = -1;
     this.dragBtn.className = 'uni-drag-handle';
     this.dragBtn.title = 'Drag to move · Click for menu';
     this.dragBtn.setAttribute('aria-label', 'Drag to reorder or click for block menu');

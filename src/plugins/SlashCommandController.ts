@@ -190,7 +190,7 @@ export class SlashCommandController {
   private filtered: SlashMenuItem[] = [];
   private cleanups: Array<() => void> = [];
   private onImageRequest: (() => void) | null = null;
-  private onTableRequest: (() => void) | null = null;
+  private onTableRequest: ((blockKey?: string) => void) | null = null;
   private onDateTimeRequest: ((includeTime: boolean) => void) | null = null;
   private slashTextKey: NodeKey | null = null;
   private slashCaretOffset: number | null = null;
@@ -210,7 +210,7 @@ export class SlashCommandController {
     this.onImageRequest = handler;
   }
 
-  setTableRequestHandler(handler: () => void): void {
+  setTableRequestHandler(handler: (blockKey?: string) => void): void {
     this.onTableRequest = handler;
   }
 
@@ -506,7 +506,8 @@ export class SlashCommandController {
 
     // Table: only open picker (do NOT also insert a default table)
     if (blockType === 'table') {
-      return () => this.onTableRequest?.();
+      const blockKey = block?.getKey();
+      return () => this.onTableRequest?.(blockKey);
     }
 
     // Inline date/datetime chips

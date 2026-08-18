@@ -35,6 +35,7 @@ export class ImageToolbarUI {
     const mkBtn = (text: string, title: string, onClick: () => void) => {
       const b = document.createElement('button');
       b.type = 'button';
+      b.tabIndex = -1;
       b.className = 'uni-image-toolbar-btn';
       b.textContent = text;
       b.title = title;

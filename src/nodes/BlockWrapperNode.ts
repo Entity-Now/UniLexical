@@ -112,6 +112,10 @@ export class BlockWrapperNode extends ElementNode {
     return false;
   }
 
+  canIndent(): boolean {
+    return false;
+  }
+
   canInsertTextBefore(): boolean {
     return false;
   }

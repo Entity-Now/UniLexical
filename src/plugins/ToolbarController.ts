@@ -54,8 +54,9 @@ import { $isImageNode } from '../nodes/ImageNode';
 import { $createHorizontalRuleNode } from '../nodes/HorizontalRuleNode';
 import { $createContainerNode } from '../nodes/ContainerNode';
 import { $createToggleWithTitle } from '../nodes/ToggleNode';
-import { $createBlockWrapperNode } from '../nodes/BlockWrapperNode';
-import { $getBlockWrapper } from './blockTransform';
+import { $createBlockWrapperNode, $isBlockWrapperNode } from '../nodes/BlockWrapperNode';
+import { $getBlockWrapper, $isBlockEffectivelyEmpty } from './blockTransform';
+import { $createSelectableParagraph, $safeSelectStart } from '../utils/selection';
 
 const EMPTY_STATE: ToolbarState = {
   bold: false,
@@ -109,6 +110,8 @@ export class ToolbarController {
   private onFullscreenToggle: (() => void) | null = null;
   private onSourceToggle: (() => void) | null = null;
   private painter: PainterSnapshot | null = null;
+  /** Block key captured before a picker steals focus (table insert). */
+  private savedInsertBlockKey: string | null = null;
 
   constructor(
     private editor: LexicalEditor,
@@ -391,6 +394,20 @@ export class ToolbarController {
     style: string;
   } | null = null;
 
+  /** Remember the current block so table insert still knows where to go after blur. */
+  captureInsertAnchor(): void {
+    this.editor.getEditorState().read(() => {
+      const selection = $getSelection();
+      if (!$isRangeSelection(selection)) return;
+      const block = $getBlockWrapper(selection.anchor.getNode());
+      if (block?.isAttached()) this.savedInsertBlockKey = block.getKey();
+    });
+  }
+
+  rememberInsertBlockKey(key: string | null | undefined): void {
+    if (key) this.savedInsertBlockKey = key;
+  }
+
   /** Call before opening color / font-size popovers */
   captureStyleSelection(): void {
     this.editor.getEditorState().read(() => {
@@ -481,8 +498,8 @@ export class ToolbarController {
   insertTable(rows: number, cols: number): void {
     const r = Math.max(1, Math.min(rows, 20));
     const c = Math.max(1, Math.min(cols, 20));
+    this.editor.focus();
     this.editor.update(() => {
-      const selection = $getSelection();
       const table = $createTableNodeWithDimensions(r, c, {
         rows: true,
         columns: false,
@@ -490,32 +507,63 @@ export class ToolbarController {
       const wrap = $createBlockWrapperNode();
       wrap.append(table);
       const after = $createBlockWrapperNode();
-      after.append($createParagraphNode());
+      after.append($createSelectableParagraph());
 
-      let block =
-        $isRangeSelection(selection)
-          ? $getBlockWrapper(selection.anchor.getNode())
-          : null;
+      const block = this.$resolveInsertAnchor();
+      // Structural edits must not leave a selection on nodes about to move
+      $setSelection(null);
 
-      // Prefer replacing empty slash/paragraph block content with table only
-      if (block?.isAttached() && !block.getTextContent().trim()) {
-        for (const k of block.getChildren()) k.remove();
-        block.append(table);
-        block.insertAfter(after);
-      } else if (block?.isAttached()) {
-        block.insertAfter(wrap);
-        wrap.insertAfter(after);
+      // Never empty a BlockWrapper then re-append: canBeEmpty() === false
+      // makes Lexical detach the wrapper as soon as its last child is removed.
+      if (block && $isBlockEffectivelyEmpty(block)) {
+        const content = block.getFirstChild();
+        if (content?.isAttached()) {
+          content.replace(table);
+        } else if (block.isAttached()) {
+          block.append(table);
+        }
+        this.$insertAfterAttached(block, after);
+      } else if (block) {
+        this.$insertAfterAttached(block, wrap);
+        this.$insertAfterAttached(wrap, after);
       } else {
         $getRoot().append(wrap);
         wrap.insertAfter(after);
       }
-      // Select first cell safely
+
       try {
         table.selectStart();
       } catch {
-        after.selectStart();
+        $safeSelectStart(after.getFirstChild() ?? after);
       }
+      this.savedInsertBlockKey = null;
     });
+  }
+
+  private $resolveInsertAnchor(): ReturnType<typeof $getBlockWrapper> {
+    const selection = $getSelection();
+    if ($isRangeSelection(selection)) {
+      const block = $getBlockWrapper(selection.anchor.getNode());
+      if (block?.isAttached() && block.getParent()) return block;
+    }
+    if (this.savedInsertBlockKey) {
+      const node = $getNodeByKey(this.savedInsertBlockKey);
+      if ($isBlockWrapperNode(node) && node.isAttached() && node.getParent()) {
+        return node;
+      }
+    }
+    return null;
+  }
+
+  private $insertAfterAttached(
+    host: { isAttached: () => boolean; getParent: () => unknown; insertAfter: (n: ReturnType<typeof $createBlockWrapperNode>) => void },
+    node: ReturnType<typeof $createBlockWrapperNode>,
+  ): void {
+    if (host.isAttached() && host.getParent()) {
+      host.insertAfter(node);
+      return;
+    }
+    $getRoot().append(node);
   }
 
   insertLineBreak(): void {
@@ -875,6 +923,7 @@ export class ToolbarController {
       case 'break':
         return this.insertLineBreak();
       case 'table':
+        this.captureInsertAnchor();
         return this.onTablePickRequest?.();
       case 'tableCellBackgroundColor':
         return this.onColorRequest?.('bg');

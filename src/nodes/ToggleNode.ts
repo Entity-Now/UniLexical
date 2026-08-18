@@ -109,6 +109,10 @@ export class ToggleNode extends ElementNode {
     return false;
   }
 
+  canIndent(): boolean {
+    return false;
+  }
+
   isShadowRoot(): boolean {
     return false;
   }

@@ -185,6 +185,7 @@ export class ToolbarUI {
       const btn = document.createElement('button');
       btn.type = 'button';
       btn.className = 'uni-toolbar-btn';
+      btn.tabIndex = -1;
       btn.dataset.item = item;
       const title = TOOLBAR_TITLES[item as keyof typeof TOOLBAR_TITLES] ?? item;
       btn.setAttribute('aria-label', title);

@@ -208,10 +208,15 @@
 }
 
 .uni-block-wrapper:hover,
-.uni-block-wrapper.uni-block-hover {
+.uni-block-wrapper.uni-block-hover,
+.uni-editor-content li.uni-block-hover,
+.uni-editor-content .uni-paragraph.uni-block-hover,
+.uni-editor-content [data-uni-container] > .uni-block-hover,
+.uni-editor-content [data-uni-toggle] > .uni-block-hover {
   border-color: rgba(79, 70, 229, 0.35) !important;
   background: rgba(79, 70, 229, 0.03) !important;
   box-shadow: 0 0 0 1px rgba(79, 70, 229, 0.06);
+  border-radius: 6px;
 }
 
 .uni-editor-is-dragging .uni-block-wrapper:hover {
@@ -229,9 +234,11 @@
   filter: none !important;
 }
 
-.uni-block-drop-target {
+.uni-block-drop-target,
+.uni-editor-content li.uni-block-drop-target {
   border-color: rgba(79, 70, 229, 0.45) !important;
   background: rgba(79, 70, 229, 0.06) !important;
+  border-radius: 6px;
 }
 
 .uni-block-drag-ghost {

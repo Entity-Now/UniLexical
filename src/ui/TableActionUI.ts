@@ -28,6 +28,7 @@ export class TableActionUI {
     for (const a of actions) {
       const btn = document.createElement('button');
       btn.type = 'button';
+      btn.tabIndex = -1;
       btn.className = 'uni-table-action-btn';
       if (a.action.startsWith('delete')) {
         btn.classList.add('uni-table-action-btn-danger');

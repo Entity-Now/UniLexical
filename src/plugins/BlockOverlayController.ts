@@ -22,12 +22,20 @@ import {
 import {
   $createListItemNode,
   $createListNode,
+  $isListItemNode,
   $isListNode,
 } from '@lexical/list';
 import { $createCodeNode, $isCodeNode } from '@lexical/code';
 import type { EventEmitter } from '../core/EventEmitter';
 import type { BlockHoverPayload } from '../core/types';
-import { $createBlockWrapperNode } from '../nodes/BlockWrapperNode';
+import { $createBlockWrapperNode, $isBlockWrapperNode } from '../nodes/BlockWrapperNode';
+import {
+  $findDragNode,
+  $getMoveGroup,
+  $moveDragGroup,
+  $resolveDragUnitFromDOM,
+  $resolveSameLevelTarget,
+} from './blockDrag';
 import { $isContainerNode, $createContainerNode } from '../nodes/ContainerNode';
 import { $isToggleNode, $createToggleWithTitle } from '../nodes/ToggleNode';
 import { $isImageNode } from '../nodes/ImageNode';
@@ -192,25 +200,44 @@ export class BlockOverlayController {
     if (!target) return;
     if (target.closest('.uni-block-overlay')) return;
 
-    const blockEl = target.closest('[data-block-id]') as HTMLElement | null;
-    if (!blockEl) return;
+    let hit: { id: string; element: HTMLElement } | null = null;
+    try {
+      hit = this.resolveHoverUnit(target);
+    } catch {
+      return;
+    }
+    if (!hit) return;
 
-    const blockId = blockEl.getAttribute('data-block-id');
-    if (!blockId) return;
-    if (blockId === this.currentBlockId) {
-      this.emitHover(blockId, blockEl);
+    if (hit.id === this.currentBlockId) {
+      this.emitHover(hit.id, hit.element);
       return;
     }
 
-    this.setHoveredBlock(blockId, blockEl);
+    this.setHoveredBlock(hit.id, hit.element);
+  }
+
+  /** Finest draggable unit under the pointer (list item / inner / top-level block). */
+  private resolveHoverUnit(
+    target: HTMLElement,
+  ): { id: string; element: HTMLElement } | null {
+    // $getNearestNodeFromDOMNode needs an active editor — editor.read(), not editorState.read()
+    const unit = this.editor.read(() => {
+      const resolved = $resolveDragUnitFromDOM(target);
+      return resolved ? { id: resolved.id, key: resolved.key } : null;
+    });
+    if (!unit) return null;
+    const el =
+      this.editor.getElementByKey(unit.key) ??
+      target.closest('li, [data-block-id], [data-uni-container], [data-uni-toggle], table');
+    if (!(el instanceof HTMLElement)) return null;
+    return { id: unit.id, element: el };
   }
 
   private setHoveredBlock(blockId: string, element: HTMLElement): void {
-    // Toggle hover ring on the live block
-    if (this.currentBlockId && this.currentBlockId !== blockId && this.rootEl) {
-      this.rootEl
-        .querySelector(`[data-block-id="${CSS.escape(this.currentBlockId)}"]`)
-        ?.classList.remove('uni-block-hover');
+    if (this.rootEl) {
+      this.rootEl.querySelectorAll('.uni-block-hover').forEach((el) => {
+        if (el !== element) el.classList.remove('uni-block-hover');
+      });
     }
     this.currentBlockId = blockId;
     element.classList.add('uni-block-hover');
@@ -226,10 +253,6 @@ export class BlockOverlayController {
   private clearHover(): void {
     if (this.currentBlockId === null) return;
     if (this.rootEl) {
-      this.rootEl
-        .querySelector(`[data-block-id="${CSS.escape(this.currentBlockId)}"]`)
-        ?.classList.remove('uni-block-hover');
-      // Belt-and-suspenders: clear any leftover hover rings
       this.rootEl.querySelectorAll('.uni-block-hover').forEach((el) => {
         el.classList.remove('uni-block-hover');
       });
@@ -253,23 +276,27 @@ export class BlockOverlayController {
       event.dataTransfer.setData('text/plain', blockId);
       event.dataTransfer.setData('text/uni-block-id', blockId);
 
-      const el = this.rootEl?.querySelector(
-        `[data-block-id="${CSS.escape(blockId)}"]`,
-      ) as HTMLElement | null;
+      const els = this.getDragGroupElements(blockId);
 
-      if (el) {
-        // Mark source block (do NOT set opacity via setDragImage on live node —
-        // browsers leave the element looking grey permanently in some cases).
-        el.classList.add('uni-block-dragging');
-        el.classList.remove('uni-block-hover');
+      if (els.length > 0) {
+        // Mark source (do NOT setDragImage on a live node — some browsers
+        // leave the original looking grey permanently).
+        for (const el of els) {
+          el.classList.add('uni-block-dragging');
+          el.classList.remove('uni-block-hover');
+        }
 
-        // Floating ghost for drag image
         this.removeDragGhost();
-        const ghost = el.cloneNode(true) as HTMLElement;
-        ghost.classList.remove('uni-block-dragging', 'uni-block-hover');
-        ghost.classList.add('uni-block-drag-ghost');
-        ghost.style.width = `${el.getBoundingClientRect().width}px`;
-        ghost.removeAttribute('data-block-id');
+        const ghost = document.createElement('div');
+        ghost.className = 'uni-block-drag-ghost';
+        const width = Math.max(...els.map((el) => el.getBoundingClientRect().width));
+        ghost.style.width = `${width}px`;
+        for (const el of els) {
+          const clone = el.cloneNode(true) as HTMLElement;
+          clone.classList.remove('uni-block-dragging', 'uni-block-hover', 'uni-block-drop-target');
+          clone.removeAttribute('data-block-id');
+          ghost.appendChild(clone);
+        }
         document.body.appendChild(ghost);
         this.dragGhost = ghost;
         try {
@@ -277,7 +304,6 @@ export class BlockOverlayController {
         } catch {
           /* some browsers restrict setDragImage */
         }
-        // Remove ghost after browser snapshots it
         requestAnimationFrame(() => {
           requestAnimationFrame(() => this.removeDragGhost());
         });
@@ -311,26 +337,20 @@ export class BlockOverlayController {
   }
 
   private updateDropIndicator(e: DragEvent): void {
-    const target = this.findBlockElementAtPoint(e.clientX, e.clientY);
-    if (!target) {
-      this.clearDropIndicator();
-      return;
-    }
-    const blockId = target.getAttribute('data-block-id');
-    if (!blockId || blockId === this.dragBlockId) {
+    const hit = this.resolveDropAtPoint(e.clientX, e.clientY);
+    if (!hit) {
       this.clearDropIndicator();
       return;
     }
 
-    const rect = target.getBoundingClientRect();
+    const rect = hit.element.getBoundingClientRect();
     const midY = rect.top + rect.height / 2;
     const placeBefore = e.clientY < midY;
 
-    // Highlight drop target
     this.rootEl?.querySelectorAll('.uni-block-drop-target').forEach((el) => {
       el.classList.remove('uni-block-drop-target', 'uni-block-drop-before', 'uni-block-drop-after');
     });
-    target.classList.add(
+    hit.element.classList.add(
       'uni-block-drop-target',
       placeBefore ? 'uni-block-drop-before' : 'uni-block-drop-after',
     );
@@ -347,7 +367,40 @@ export class BlockOverlayController {
     ind.style.width = `${rect.width}px`;
     ind.style.top = `${placeBefore ? rect.top - 1 : rect.bottom - 1}px`;
     ind.dataset.place = placeBefore ? 'before' : 'after';
-    ind.dataset.targetId = blockId;
+    ind.dataset.targetId = hit.id;
+  }
+
+  /**
+   * Same-level drop only: a level-1 unit cannot land between level-2 siblings,
+   * and a nested item cannot escape its parent list / container.
+   */
+  private resolveDropAtPoint(
+    x: number,
+    y: number,
+  ): { id: string; element: HTMLElement } | null {
+    const dragId = this.dragBlockId;
+    if (!dragId) return null;
+
+    const rawEl = this.findBlockElementAtPoint(x, y);
+    if (!rawEl) return null;
+
+    const result = this.editor.read(() => {
+      const dragNode = $findDragNode(dragId);
+      if (!dragNode) return null;
+      const hitUnit = $resolveDragUnitFromDOM(rawEl);
+      if (!hitUnit) return null;
+      const hitNode = $findDragNode(hitUnit.id);
+      if (!hitNode) return null;
+      const target = $resolveSameLevelTarget(dragNode, hitNode);
+      if (!target) return null;
+      return $isBlockWrapperNode(target)
+        ? { id: target.getBlockId(), key: target.getKey() }
+        : { id: `nk:${target.getKey()}`, key: target.getKey() };
+    });
+    if (!result) return null;
+    const el = this.editor.getElementByKey(result.key);
+    if (!(el instanceof HTMLElement)) return null;
+    return { id: result.id, element: el };
   }
 
   private clearDropIndicator(): void {
@@ -366,9 +419,9 @@ export class BlockOverlayController {
       if (!(el instanceof HTMLElement)) continue;
       if (el.classList.contains('uni-drop-indicator')) continue;
       if (el.classList.contains('uni-block-overlay')) continue;
-      if (el.hasAttribute('data-block-id')) return el;
-      const parent = el.closest('[data-block-id]');
-      if (parent instanceof HTMLElement) return parent;
+      if (el.closest('.uni-block-overlay, .uni-drop-indicator')) continue;
+      // Prefer the raw hit so list items / container children resolve at their level
+      if (this.rootEl?.contains(el)) return el;
     }
     return null;
   }
@@ -377,35 +430,41 @@ export class BlockOverlayController {
     const dragId = this.dragBlockId;
     if (!dragId) return;
 
-    // Prefer indicator metadata (more reliable during drag)
     let targetId = this.dropIndicator?.dataset.targetId ?? null;
     let placeBefore = this.dropIndicator?.dataset.place === 'before';
 
     if (!targetId) {
-      const targetEl = this.findBlockElementAtPoint(e.clientX, e.clientY);
-      if (!targetEl) return;
-      targetId = targetEl.getAttribute('data-block-id');
-      if (!targetId) return;
-      const rect = targetEl.getBoundingClientRect();
+      const hit = this.resolveDropAtPoint(e.clientX, e.clientY);
+      if (!hit) return;
+      targetId = hit.id;
+      const rect = hit.element.getBoundingClientRect();
       placeBefore = e.clientY < rect.top + rect.height / 2;
     }
 
     if (!targetId || targetId === dragId) return;
 
     this.editor.update(() => {
-      const dragNode = $findBlockById(dragId);
-      const targetNode = $findBlockById(targetId!);
+      const dragNode = $findDragNode(dragId);
+      const targetNode = $findDragNode(targetId!);
       if (!dragNode || !targetNode) return;
-      if (dragNode === targetNode) return;
-      if (!dragNode.getParent() || !targetNode.getParent()) return;
-
-      // insertBefore/After require the node to still be in the tree; remove first carefully
-      if (placeBefore) {
-        targetNode.insertBefore(dragNode);
-      } else {
-        targetNode.insertAfter(dragNode);
-      }
+      if (dragNode.getKey() === targetNode.getKey()) return;
+      $moveDragGroup(dragNode, targetNode, placeBefore);
     });
+  }
+
+  private getDragGroupElements(id: string): HTMLElement[] {
+    const keys: string[] = [];
+    this.editor.read(() => {
+      const node = $findDragNode(id);
+      if (!node) return;
+      for (const n of $getMoveGroup(node)) keys.push(n.getKey());
+    });
+    const els: HTMLElement[] = [];
+    for (const key of keys) {
+      const el = this.editor.getElementByKey(key);
+      if (el instanceof HTMLElement) els.push(el);
+    }
+    return els;
   }
 
   /**
@@ -417,7 +476,26 @@ export class BlockOverlayController {
   handlePlusClick(blockId: string, onReady?: () => void): void {
     this.editor.update(
       () => {
-        let block = $findBlockById(blockId);
+        const unit = $findDragNode(blockId);
+
+        if ($isListItemNode(unit) && unit.isAttached()) {
+          const group = $getMoveGroup(unit);
+          const last = group[group.length - 1] ?? unit;
+          const item = $createListItemNode();
+          item.append($createTextNode(''));
+          last.insertAfter(item);
+          $safeSelectStart(item);
+          return;
+        }
+
+        if (unit && !$isBlockWrapperNode(unit) && unit.isAttached()) {
+          const p = $createSelectableParagraph();
+          unit.insertAfter(p);
+          $safeSelectStart(p);
+          return;
+        }
+
+        let block = $isBlockWrapperNode(unit) ? unit : $findBlockById(blockId);
 
         // Fallback: use current selection's block (never invent a trailing line)
         if (!block || !block.isAttached()) {
@@ -484,9 +562,37 @@ export class BlockOverlayController {
   getBlockInfo(blockId: string): BlockInfo | null {
     let info: BlockInfo | null = null;
     this.editor.getEditorState().read(() => {
-      const block = $findBlockById(blockId);
-      if (!block?.isAttached()) return;
-      const kind = $detectBlockKind(block.getFirstChild());
+      const node = $findDragNode(blockId);
+      if (!node?.isAttached()) return;
+
+      if ($isListItemNode(node)) {
+        const list = node.getParent();
+        const t = $isListNode(list) ? list.getListType() : 'bullet';
+        const kind: BlockContentKind =
+          t === 'number' ? 'number' : t === 'check' ? 'check' : 'bullet';
+        info = {
+          blockId,
+          kind,
+          label: KIND_LABELS[kind],
+          supportsTextColor: true,
+          supportsTurnInto: false,
+        };
+        return;
+      }
+
+      if (!$isBlockWrapperNode(node)) {
+        const kind = $detectBlockKind(node);
+        info = {
+          blockId,
+          kind,
+          label: KIND_LABELS[kind],
+          supportsTextColor: !['image', 'hr', 'table'].includes(kind),
+          supportsTurnInto: false,
+        };
+        return;
+      }
+
+      const kind = $detectBlockKind(node.getFirstChild());
       info = {
         blockId,
         kind,
@@ -501,9 +607,9 @@ export class BlockOverlayController {
   /** Select entire block content (for color apply etc.) */
   selectBlock(blockId: string): void {
     this.editor.update(() => {
-      const block = $findBlockById(blockId);
-      if (!block?.isAttached()) return;
-      const content = block.getFirstChild();
+      const node = $findDragNode(blockId);
+      if (!node?.isAttached()) return;
+      const content = $isBlockWrapperNode(node) ? node.getFirstChild() : node;
       if (!content) return;
       try {
         if ($isElementNode(content)) {
@@ -520,12 +626,36 @@ export class BlockOverlayController {
   deleteBlock(blockId: string): void {
     this.editor.update(() => {
       $setSelection(null);
-      const block = $findBlockById(blockId);
-      if (!block?.isAttached()) return;
+      const node = $findDragNode(blockId);
+      if (!node?.isAttached()) return;
+
+      if (!$isBlockWrapperNode(node)) {
+        const group = $getMoveGroup(node);
+        const parent = node.getParent();
+        const prev = group[0]?.getPreviousSibling() ?? null;
+        const last = group[group.length - 1];
+        const next = last?.getNextSibling() ?? null;
+        for (const n of group) {
+          if (n.isAttached()) n.remove();
+        }
+        if ($isListNode(parent) && parent.isAttached() && parent.getChildrenSize() === 0) {
+          const wrap = $getBlockWrapper(parent);
+          parent.remove();
+          if (wrap?.isAttached() && wrap.getChildrenSize() === 0) {
+            wrap.append($createSelectableParagraph());
+            $safeSelectStart(wrap.getFirstChild() ?? wrap);
+            return;
+          }
+        }
+        const focus = next ?? prev;
+        if (focus) $safeSelectStart(focus);
+        return;
+      }
+
       const root = $getRoot();
-      const prev = block.getPreviousSibling();
-      const next = block.getNextSibling();
-      block.remove();
+      const prev = node.getPreviousSibling();
+      const next = node.getNextSibling();
+      node.remove();
       // Keep at least one block
       if (root.getChildrenSize() === 0) {
         const w = $createBlockWrapperNode();
@@ -546,29 +676,71 @@ export class BlockOverlayController {
 
   duplicateBlock(blockId: string): void {
     this.editor.update(() => {
-      const block = $findBlockById(blockId);
-      if (!block?.isAttached()) return;
+      const node = $findDragNode(blockId);
+      if (!node?.isAttached()) return;
       $setSelection(null);
+
+      if ($isListItemNode(node)) {
+        const item = $createListItemNode(node.getChecked() ?? undefined);
+        item.append($createTextNode(node.getTextContent()));
+        const group = $getMoveGroup(node);
+        const last = group[group.length - 1] ?? node;
+        last.insertAfter(item);
+        $safeSelectStart(item);
+        return;
+      }
+
+      if (!$isBlockWrapperNode(node)) {
+        const kind = $detectBlockKind(node);
+        const fresh = this.$createContentForKind(kind, node.getTextContent());
+        node.insertAfter(fresh);
+        $safeSelectStart(fresh);
+        return;
+      }
+
       // Rebuild from kind + text (keeps type; nested rich structure simplified)
-      const kind = $detectBlockKind(block.getFirstChild());
-      const text = block.getTextContent();
+      const kind = $detectBlockKind(node.getFirstChild());
+      const text = node.getTextContent();
       const fresh = this.$createContentForKind(kind, text);
       const wrap = $createBlockWrapperNode();
       wrap.append(fresh);
-      block.insertAfter(wrap);
+      node.insertAfter(wrap);
       $safeSelectStart(wrap.getFirstChild() ?? wrap);
     });
   }
 
   insertRelative(blockId: string, where: 'before' | 'after'): void {
     this.editor.update(() => {
-      const block = $findBlockById(blockId);
-      if (!block?.isAttached()) return;
+      const node = $findDragNode(blockId);
+      if (!node?.isAttached()) return;
       $setSelection(null);
+
+      if ($isListItemNode(node)) {
+        const item = $createListItemNode();
+        item.append($createTextNode(''));
+        if (where === 'before') {
+          node.insertBefore(item);
+        } else {
+          const group = $getMoveGroup(node);
+          const last = group[group.length - 1] ?? node;
+          last.insertAfter(item);
+        }
+        $safeSelectStart(item);
+        return;
+      }
+
+      if (!$isBlockWrapperNode(node)) {
+        const p = $createSelectableParagraph();
+        if (where === 'before') node.insertBefore(p);
+        else node.insertAfter(p);
+        $safeSelectStart(p);
+        return;
+      }
+
       const created =
         where === 'before'
-          ? $insertParagraphBlockBefore(block)
-          : $insertParagraphBlockAfter(block);
+          ? $insertParagraphBlockBefore(node)
+          : $insertParagraphBlockAfter(node);
       $safeSelectStart(created.getFirstChild() ?? created);
     });
   }
@@ -576,7 +748,8 @@ export class BlockOverlayController {
   turnInto(blockId: string, kind: BlockContentKind): void {
     this.editor.update(
       () => {
-        const block = $findBlockById(blockId);
+        const found = $findDragNode(blockId);
+        const block = $isBlockWrapperNode(found) ? found : $findBlockById(blockId);
         if (!block?.isAttached()) return;
         const text = block.getTextContent();
         $setSelection(null);
@@ -604,11 +777,12 @@ export class BlockOverlayController {
   applyBlockTextColor(blockId: string, color: string): void {
     this.editor.focus();
     this.editor.update(() => {
-      const block = $findBlockById(blockId);
-      if (!block?.isAttached()) return;
+      const node = $findDragNode(blockId);
+      if (!node?.isAttached()) return;
+      const block = $isBlockWrapperNode(node) ? node : node;
 
       // Prefer Lexical $patchStyleText over a full-block selection
-      const content = block.getFirstChild();
+      const content = $isBlockWrapperNode(block) ? block.getFirstChild() : block;
       if ($isElementNode(content)) {
         try {
           content.select(0, content.getChildrenSize());

@@ -46,6 +46,7 @@ import { ToggleNode } from '../nodes/ToggleNode';
 import { DateTimeNode } from '../nodes/DateTimeNode';
 import { registerBlockNormalizeTransform, $normalizeRootBlocks } from '../plugins/blockTransform';
 import { registerEmptyBlockExit } from '../plugins/EmptyBlockExit';
+import { registerTabIndent } from '../plugins/tabIndent';
 import { registerPasteSupport } from '../plugins/PasteController';
 import { registerLowlightCodeHighlighting } from '../plugins/codeHighlight';
 import { $createSelectableParagraph } from '../utils/selection';
@@ -173,7 +174,8 @@ export class UniEditor {
       this.toolbar.setCustomActionHandler(config.onCustomAction);
     }
     // Slash “Table” opens the same interactive grid picker as the toolbar
-    this.slash.setTableRequestHandler(() => {
+    this.slash.setTableRequestHandler((blockKey) => {
+      this.toolbar.rememberInsertBlockKey(blockKey);
       const rect = getCaretRect() ?? new DOMRect(window.innerWidth / 2 - 90, 120, 180, 0);
       if (this.toolbarUI) {
         this.toolbarUI.openTablePickerAt(rect);
@@ -214,6 +216,7 @@ export class UniEditor {
     this.cleanups.push(registerRichText(this.editor));
     this.cleanups.push(registerList(this.editor));
     this.cleanups.push(registerCheckList(this.editor));
+    this.cleanups.push(registerTabIndent(this.editor));
     // Syntax highlighting via lowlight (highlight.js grammars)
     this.cleanups.push(registerLowlightCodeHighlighting(this.editor));
     this.cleanups.push(registerTablePlugin(this.editor));

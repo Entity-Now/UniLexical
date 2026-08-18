@@ -82,7 +82,7 @@ export class DateTimeNode extends DecoratorNode<null> {
     span.setAttribute('data-lexical-decorator', 'true');
     span.setAttribute('data-include-time', this.__includeTime ? 'true' : 'false');
     span.setAttribute('data-datetime', this.__datetime);
-    span.tabIndex = 0;
+    span.tabIndex = -1;
     span.setAttribute('role', 'button');
     span.title = 'Click to edit date';
     this.paint(span);

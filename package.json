@@ -1,6 +1,6 @@
 {
   "name": "unilexical",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Framework-agnostic, Notion-style block rich-text editor powered by Lexical",
   "type": "module",
   "main": "./dist/index.cjs",
@@ -103,12 +103,16 @@
   "sideEffects": [
     "*.css"
   ],
-"repository": {
-  "type": "git",
-  "url": "https://github.com/Entity-Now/UniLexical"
-},
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Entity-Now/UniLexical"
+  },
   "bugs": {
     "url": "https://github.com/Entity-Now/UniLexical/issues"
   },
-  "homepage": "https://github.com/Entity-Now/UniLexical#readme"
+  "homepage": "https://github.com/Entity-Now/UniLexical#readme",
+  "allowScripts": {
+    "esbuild@0.27.7": true,
+    "esbuild@0.25.12": true
+  }
 }

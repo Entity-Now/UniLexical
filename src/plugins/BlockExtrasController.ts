@@ -113,6 +113,7 @@ export class BlockExtrasController {
       badge.className = 'uni-container-icon';
       badge.setAttribute('data-uni-chrome', 'true');
       badge.setAttribute('contenteditable', 'false');
+      badge.tabIndex = -1;
       badge.title = 'Change icon (Shift+click: change style)';
       badge.setAttribute('aria-label', 'Change callout icon');
       dom.insertBefore(badge, dom.firstChild);
