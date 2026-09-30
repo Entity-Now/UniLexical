@@ -1,6 +1,4 @@
 import tippy, { type Instance, type Props, type Content } from 'tippy.js';
-import 'tippy.js/dist/tippy.css';
-import 'tippy.js/animations/shift-away.css';
 
 const BASE: Partial<Props> = {
   theme: 'unilexical',

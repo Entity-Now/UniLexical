@@ -1,6 +1,8 @@
 import {
   $createParagraphNode,
   $createTextNode,
+  $isElementNode,
+  $isDecoratorNode,
   ParagraphNode,
   type ElementNode,
   type LexicalNode,
@@ -11,10 +13,25 @@ import {
   CodeNode,
 } from '@lexical/code';
 import {
+  TableNode,
+  TableRowNode,
+  TableCellNode,
+  TableCellHeaderStates,
+  $createTableNode,
+  $createTableRowNode,
+  $createTableCellNode,
+  $isTableNode,
+  $isTableRowNode,
+  $isTableCellNode,
+} from '@lexical/table';
+import {
   $convertFromMarkdownString,
+  $convertToMarkdownString,
   CODE,
   TRANSFORMERS,
+  type ElementTransformer,
   type MultilineElementTransformer,
+  type TextMatchTransformer,
   type Transformer,
 } from '@lexical/markdown';
 import {
@@ -23,6 +40,20 @@ import {
   ContainerNode,
   type ContainerVariant,
 } from '../nodes/ContainerNode';
+import {
+  $createHorizontalRuleNode,
+  $isHorizontalRuleNode,
+  HorizontalRuleNode,
+} from '../nodes/HorizontalRuleNode';
+import {
+  $createImageNode,
+  $isImageNode,
+  ImageNode,
+} from '../nodes/ImageNode';
+import {
+  BlockWrapperNode,
+  $isBlockWrapperNode,
+} from '../nodes/BlockWrapperNode';
 
 export function parseContainerDirective(name?: string): {
   variant: ContainerVariant;
@@ -66,6 +97,197 @@ export function variantToDirective(variant: ContainerVariant): string {
 }
 
 /**
+ * Text-level format and match transformers safe to run inside table cells
+ * and inline text containers without triggering multiline/block transforms.
+ */
+export const INLINE_TRANSFORMERS: Transformer[] = TRANSFORMERS.filter(
+  (t) => t.type === 'text-format' || t.type === 'text-match',
+);
+
+/**
+ * Splits a markdown table row by unescaped pipe characters (|).
+ * Correctly preserves escaped pipes (\|).
+ */
+export function splitTableRow(line: string): string[] {
+  let content = line.trim();
+  if (content.startsWith('|')) content = content.slice(1);
+  if (content.endsWith('|')) content = content.slice(0, -1);
+
+  const cells: string[] = [];
+  let current = '';
+  let escaped = false;
+  for (let i = 0; i < content.length; i++) {
+    const char = content[i];
+    if (escaped) {
+      if (char === '|') {
+        current += '|';
+      } else {
+        current += '\\' + char;
+      }
+      escaped = false;
+    } else if (char === '\\') {
+      escaped = true;
+    } else if (char === '|') {
+      cells.push(current.trim());
+      current = '';
+    } else {
+      current += char;
+    }
+  }
+  if (escaped) {
+    current += '\\';
+  }
+  cells.push(current.trim());
+  return cells;
+}
+
+/**
+ * Tests whether a line matches a GFM table delimiter row (e.g. `| --- | :---: | ---: |`).
+ */
+export function isTableDividerRow(line: string): boolean {
+  const trimmed = line.trim();
+  if (!trimmed || !trimmed.includes('-')) return false;
+  const cells = splitTableRow(trimmed);
+  if (cells.length === 0) return false;
+  return cells.every((c) => /^:?-+:?$/.test(c));
+}
+
+/**
+ * Multiline Transformer for GFM Tables.
+ * Parses markdown tables into TableNode -> TableRowNode -> TableCellNode,
+ * and exports TableNode back to clean GFM markdown table syntax.
+ */
+export const TABLE_TRANSFORMER: MultilineElementTransformer = {
+  dependencies: [TableNode, TableRowNode, TableCellNode, ParagraphNode],
+  type: 'multiline-element',
+  regExpStart: /^[ \t]*\|?.+\|.*$/,
+  regExpEnd: {
+    optional: true,
+    regExp: /^[ \t]*$/,
+  },
+  replace: () => {},
+  handleImportAfterStartMatch: ({ lines, rootNode, startLineIndex }) => {
+    // Table requires a valid delimiter row immediately following the header row
+    if (startLineIndex + 1 >= lines.length) return null;
+    const dividerLine = lines[startLineIndex + 1];
+    if (!isTableDividerRow(dividerLine)) return null;
+
+    const headerCells = splitTableRow(lines[startLineIndex]);
+    const colCount = headerCells.length;
+    if (colCount === 0) return null;
+
+    let endLineIndex = startLineIndex + 1;
+    while (endLineIndex + 1 < lines.length) {
+      const nextLine = lines[endLineIndex + 1].trim();
+      if (!nextLine || !nextLine.includes('|')) break;
+      endLineIndex++;
+    }
+
+    const table = $createTableNode();
+    for (let i = startLineIndex; i <= endLineIndex; i++) {
+      if (i === startLineIndex + 1) continue; // Skip divider row
+      const isHeader = i === startLineIndex;
+      const row = $createTableRowNode();
+      const rawCells = splitTableRow(lines[i]);
+      for (let c = 0; c < colCount; c++) {
+        const text = rawCells[c] || '';
+        const cell = $createTableCellNode(
+          isHeader ? TableCellHeaderStates.ROW : TableCellHeaderStates.NO_STATUS,
+        );
+        const p = $createParagraphNode();
+        if (text) {
+          $convertFromMarkdownString(text, INLINE_TRANSFORMERS, p);
+        }
+        if (p.getChildrenSize() === 0) {
+          p.append($createTextNode(''));
+        }
+        cell.append(p);
+        row.append(cell);
+      }
+      table.append(row);
+    }
+
+    rootNode.append(table);
+    return [true, endLineIndex];
+  },
+  export: (node: LexicalNode): string | null => {
+    if (!$isTableNode(node)) return null;
+    const rows = node.getChildren();
+    if (rows.length === 0) return null;
+
+    const output: string[] = [];
+    let maxCols = 0;
+    const rowData: string[][] = [];
+
+    for (const row of rows) {
+      if (!$isTableRowNode(row)) continue;
+      const cells = row.getChildren();
+      maxCols = Math.max(maxCols, cells.length);
+      const cellTexts: string[] = [];
+      for (const cell of cells) {
+        if (!$isTableCellNode(cell)) continue;
+        const text = $convertToMarkdownString(INLINE_TRANSFORMERS, cell)
+          .trim()
+          .replace(/\n+/g, '<br>')
+          .replace(/\|/g, '\\|');
+        cellTexts.push(text);
+      }
+      rowData.push(cellTexts);
+    }
+
+    if (rowData.length === 0) return null;
+
+    rowData.forEach((cells, rIdx) => {
+      while (cells.length < maxCols) cells.push('');
+      output.push('| ' + cells.join(' | ') + ' |');
+      if (rIdx === 0) {
+        output.push('| ' + Array(maxCols).fill('---').join(' | ') + ' |');
+      }
+    });
+
+    return output.join('\n');
+  },
+};
+
+/**
+ * Horizontal Rule (Divider) Transformer.
+ * Parses ---, ***, ___ into HorizontalRuleNode and exports back to ---.
+ */
+export const HR_TRANSFORMER: ElementTransformer = {
+  dependencies: [HorizontalRuleNode],
+  type: 'element',
+  regExp: /^(?:---|\*\*\*|___)\s*$/,
+  replace: (parentNode) => {
+    const hr = $createHorizontalRuleNode();
+    parentNode.replace(hr);
+  },
+  export: (node: LexicalNode): string | null => {
+    return $isHorizontalRuleNode(node) ? '---' : null;
+  },
+};
+
+/**
+ * Markdown Image Transformer.
+ * Parses ![alt](src "title") into ImageNode and exports back to ![alt](src).
+ */
+export const IMAGE_TRANSFORMER: TextMatchTransformer = {
+  dependencies: [ImageNode],
+  type: 'text-match',
+  importRegExp: /!\[(.*?)\]\((.+?)(?:\s+"(.*?)")?\)/,
+  regExp: /!\[(.*?)\]\((.+?)(?:\s+"(.*?)")?\)$/,
+  trigger: ')',
+  replace: (textNode, match) => {
+    const [, alt, src] = match;
+    const imageNode = $createImageNode({ src, alt });
+    textNode.replace(imageNode);
+  },
+  export: (node: LexicalNode): string | null => {
+    if (!$isImageNode(node)) return null;
+    return `![${node.getAlt()}](${node.getSrc()})`;
+  },
+};
+
+/**
  * Multiline Transformer for :::info, :::tip, :::warning, :::danger, etc.
  * Supports VitePress / VuePress / markdown-it custom containers.
  */
@@ -103,7 +325,8 @@ export const CONTAINER_TRANSFORMER: MultilineElementTransformer = {
 
       const innerContent = lines.join('\n').trim();
       if (innerContent) {
-        $convertFromMarkdownString(innerContent, TRANSFORMERS, container);
+        // Use full UNI_TRANSFORMERS so nested tables, images, code blocks work
+        $convertFromMarkdownString(innerContent, UNI_TRANSFORMERS, container);
       }
     }
 
@@ -166,11 +389,60 @@ export const CUSTOM_CODE_TRANSFORMER: MultilineElementTransformer = {
 };
 
 /**
- * Standard UniLexical markdown transformers list, including container support
- * and hardened code fence parsing.
+ * Transparent exporter for BlockWrapperNode.
+ * Allows nested block elements (Table, Heading, Code, Quote, Container, etc.)
+ * inside BlockWrapperNode to be exported to Markdown correctly.
+ */
+export const BLOCK_WRAPPER_TRANSFORMER: ElementTransformer = {
+  dependencies: [BlockWrapperNode],
+  type: 'element',
+  regExp: /^[ \t]*$/,
+  replace: () => {},
+  export: (
+    node: LexicalNode,
+    exportChildren: (node: ElementNode) => string,
+  ): string | null => {
+    if (!$isBlockWrapperNode(node)) return null;
+    const inner = node.getFirstChild();
+    if (!inner) return '';
+
+    // Search transformers for inner node
+    for (const t of UNI_TRANSFORMERS) {
+      if (t !== BLOCK_WRAPPER_TRANSFORMER && 'export' in t && typeof t.export === 'function') {
+        const res = (t.export as (n: LexicalNode, fn: (n: ElementNode) => string) => string | null)(
+          inner,
+          exportChildren,
+        );
+        if (res !== null && res !== undefined) return res;
+      }
+    }
+
+    if ($isElementNode(inner)) {
+      return exportChildren(inner);
+    }
+    if ($isDecoratorNode(inner)) {
+      return inner.getTextContent();
+    }
+    return null;
+  },
+};
+
+/**
+ * Standard UniLexical markdown transformers list, including:
+ * - BlockWrapper transparent unwrapping
+ * - Table support (GFM)
+ * - Container support (:::info etc.)
+ * - Hardened code fence parsing (```lang [options])
+ * - Horizontal rule (---)
+ * - Image support (![alt](src))
+ * - Lexical standard inline & block transformers
  */
 export const UNI_TRANSFORMERS: Transformer[] = [
+  BLOCK_WRAPPER_TRANSFORMER,
+  TABLE_TRANSFORMER,
   CONTAINER_TRANSFORMER,
   CUSTOM_CODE_TRANSFORMER,
+  HR_TRANSFORMER,
+  IMAGE_TRANSFORMER,
   ...TRANSFORMERS.filter((t) => t !== CODE),
 ];

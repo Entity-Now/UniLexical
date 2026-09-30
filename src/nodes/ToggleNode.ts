@@ -79,6 +79,24 @@ export class ToggleNode extends ElementNode {
 
   static importDOM(): DOMConversionMap | null {
     return {
+      details: (dom) => {
+        const open = dom.hasAttribute('open');
+        return {
+          conversion: (): DOMConversionOutput => ({
+            node: $createToggleNode(open),
+          }),
+          priority: 2,
+        };
+      },
+      summary: () => ({
+        conversion: (dom): DOMConversionOutput => {
+          const p = $createParagraphNode();
+          return {
+            node: p,
+          };
+        },
+        priority: 2,
+      }),
       div: (dom) => {
         if (!dom.hasAttribute('data-uni-toggle')) return null;
         const open = dom.getAttribute('data-open') !== 'false';

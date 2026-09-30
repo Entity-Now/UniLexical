@@ -1,4 +1,5 @@
 import { getCalloutIconSvg, normalizeCalloutIcon } from '../ui/calloutIcons';
+import { splitTableRow, isTableDividerRow } from './markdownTransformers';
 
 /**
  * Normalize exported HTML so preview.css can style custom blocks reliably.
@@ -136,9 +137,20 @@ export function enhanceHtmlForPreview(html: string): string {
       }
     });
 
-    // ── Tables ──────────────────────────────────────────────────────────
+    // ── Tables: fault-tolerant markdown table recovery & responsive wrapping ──
+    recoverMarkdownTablesInHtml(doc);
     doc.querySelectorAll('table').forEach((table) => {
       table.classList.add('uni-table');
+      table.querySelectorAll('th').forEach((th) => th.classList.add('uni-table-cell-header'));
+      table.querySelectorAll('td').forEach((td) => td.classList.add('uni-table-cell'));
+
+      const parent = table.parentElement;
+      if (!parent?.classList.contains('uni-table-wrapper')) {
+        const wrapper = doc.createElement('div');
+        wrapper.className = 'uni-table-wrapper';
+        parent?.insertBefore(wrapper, table);
+        wrapper.appendChild(table);
+      }
     });
 
     // ── Code tabs initialization ─────────────────────────────────────
@@ -194,4 +206,112 @@ function guessDisplayFromClass(el: HTMLElement): string | null {
   if (el.classList.contains('uni-image-display-inline')) return 'inline';
   if (el.classList.contains('uni-image-display-block')) return 'block';
   return null;
+}
+
+/**
+ * Fault-tolerant markdown table recovery:
+ * Detects damaged/unrendered markdown table paragraphs (e.g. from previously saved documents
+ * where tables degraded into paragraphs) and reconstructs them into semantic HTML <table>.
+ */
+function recoverMarkdownTablesInHtml(doc: Document): void {
+  // 1. Recover single <p> elements containing multiple rows separated by <br>
+  doc.querySelectorAll('p').forEach((p) => {
+    const rawHtml = p.innerHTML;
+    if (rawHtml.includes('<br') && rawHtml.includes('|')) {
+      const lines = rawHtml
+        .split(/<br\s*\/?>/i)
+        .map((l) => l.replace(/<\/?[^>]+(>|$)/g, '').trim())
+        .filter(Boolean);
+      if (lines.length >= 2 && lines[0].includes('|') && isTableDividerRow(lines[1])) {
+        const table = buildTableFromMarkdownRows(doc, lines);
+        p.parentNode?.replaceChild(table, p);
+      }
+    }
+  });
+
+  // 2. Recover multiple consecutive <p> elements that each represent a table row
+  const paragraphs = Array.from(doc.querySelectorAll('p'));
+  let i = 0;
+  while (i < paragraphs.length) {
+    const p = paragraphs[i];
+    const text = (p.textContent || '').trim();
+    if (text.includes('|') && i + 1 < paragraphs.length) {
+      const nextText = (paragraphs[i + 1].textContent || '').trim();
+      if (isTableDividerRow(nextText)) {
+        const tablePs = [p, paragraphs[i + 1]];
+        let j = i + 2;
+        while (j < paragraphs.length) {
+          const rowText = (paragraphs[j].textContent || '').trim();
+          if (!rowText || !rowText.includes('|')) break;
+          tablePs.push(paragraphs[j]);
+          j++;
+        }
+        const rowStrings = tablePs.map((el) => (el.textContent || '').trim());
+        const table = buildTableFromMarkdownRows(doc, rowStrings);
+        p.parentNode?.insertBefore(table, p);
+        tablePs.forEach((el) => el.remove());
+        i = j;
+        continue;
+      }
+    }
+    i++;
+  }
+}
+
+function renderInlineMarkdownToHtml(text: string): string {
+  return text
+    .replace(/\\\|/g, '&#124;')
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/__(.+?)__/g, '<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g, '<em>$1</em>')
+    .replace(/_(.+?)_/g, '<em>$1</em>')
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    .replace(/~~(.+?)~~/g, '<del>$1</del>')
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>')
+    .replace(/&#124;/g, '|');
+}
+
+function buildTableFromMarkdownRows(doc: Document, rows: string[]): HTMLTableElement {
+  const table = doc.createElement('table');
+  table.className = 'uni-table';
+  const thead = doc.createElement('thead');
+  const tbody = doc.createElement('tbody');
+
+  const headerCells = splitTableRow(rows[0]);
+  const dividerCells = splitTableRow(rows[1]);
+  const alignments = dividerCells.map((c) => {
+    if (c.startsWith(':') && c.endsWith(':')) return 'center';
+    if (c.endsWith(':')) return 'right';
+    return 'left';
+  });
+
+  const trHead = doc.createElement('tr');
+  headerCells.forEach((c, idx) => {
+    const th = doc.createElement('th');
+    th.className = 'uni-table-cell-header';
+    th.innerHTML = renderInlineMarkdownToHtml(c);
+    if (alignments[idx] && alignments[idx] !== 'left') {
+      th.style.textAlign = alignments[idx];
+    }
+    trHead.appendChild(th);
+  });
+  thead.appendChild(trHead);
+  table.appendChild(thead);
+
+  for (let r = 2; r < rows.length; r++) {
+    const tr = doc.createElement('tr');
+    const cells = splitTableRow(rows[r]);
+    for (let c = 0; c < headerCells.length; c++) {
+      const td = doc.createElement('td');
+      td.className = 'uni-table-cell';
+      td.innerHTML = renderInlineMarkdownToHtml(cells[c] || '');
+      if (alignments[c] && alignments[c] !== 'left') {
+        td.style.textAlign = alignments[c];
+      }
+      tr.appendChild(td);
+    }
+    tbody.appendChild(tr);
+  }
+  table.appendChild(tbody);
+  return table;
 }

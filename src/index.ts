@@ -97,11 +97,18 @@ export { BlockOverlayController } from './plugins/BlockOverlayController';
 export type { BlockContentKind, BlockInfo } from './plugins/BlockOverlayController';
 export { SerializationRegistry, exportHtml, exportMarkdown, exportJson } from './plugins/SerializationRegistry';
 export {
+  BLOCK_WRAPPER_TRANSFORMER,
+  TABLE_TRANSFORMER,
+  HR_TRANSFORMER,
+  IMAGE_TRANSFORMER,
+  INLINE_TRANSFORMERS,
   CONTAINER_TRANSFORMER,
   CUSTOM_CODE_TRANSFORMER,
   UNI_TRANSFORMERS,
   parseContainerDirective,
   variantToDirective,
+  splitTableRow,
+  isTableDividerRow,
 } from './plugins/markdownTransformers';
 export { ImageController } from './plugins/ImageController';
 export { AttachmentController } from './plugins/AttachmentController';

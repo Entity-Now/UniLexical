@@ -71,11 +71,30 @@ export class SerializationRegistry {
           const root = $getRoot();
           root.clear();
           const parser = new DOMParser();
-          const dom = parser.parseFromString(wrapHtmlFragment(content), 'text/html');
+          // Recover any degraded tables and normalize HTML
+          const enhanced = enhanceHtmlForPreview(content);
+          const dom = parser.parseFromString(wrapHtmlFragment(enhanced), 'text/html');
+
+          // Unwrap table wrappers so tables are direct children
+          dom.querySelectorAll('.uni-table-wrapper').forEach((wrap) => {
+            const parent = wrap.parentNode;
+            if (parent) {
+              while (wrap.firstChild) parent.insertBefore(wrap.firstChild, wrap);
+              parent.removeChild(wrap);
+            }
+          });
+
+          // Strip preview chrome before importing nodes into editor
+          dom
+            .querySelectorAll(
+              '.uni-container-icon, [data-uni-chrome], .mermaid-header, .uni-image-resize-handle, .uni-image-spinner',
+            )
+            .forEach((el) => el.remove());
+
           const nodes = $generateNodesFromDOM(editor, dom);
           $insertNodes(nodes);
           $normalizeRootBlocks();
-        });
+        }, { discrete: true });
       },
     });
 
@@ -96,7 +115,7 @@ export class SerializationRegistry {
           const normalized = content.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
           $convertFromMarkdownString(normalized, this.transformers);
           $normalizeRootBlocks();
-        });
+        }, { discrete: true });
       },
     });
 
@@ -109,7 +128,7 @@ export class SerializationRegistry {
         editor.setEditorState(state);
         editor.update(() => {
           $normalizeRootBlocks();
-        });
+        }, { discrete: true });
       },
     });
   }

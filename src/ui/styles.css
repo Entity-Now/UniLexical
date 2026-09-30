@@ -1235,9 +1235,9 @@ body > .uni-block-overlay,
   border-spacing: 0 !important;
   width: 100% !important;
   margin: 0.5em 0 !important;
-  table-layout: fixed !important;
+  table-layout: auto !important;
   background: transparent !important;
-  border: none !important;
+  border: 1px solid var(--uni-border, #e5e7eb) !important;
 }
 
 .uni-table-cell,

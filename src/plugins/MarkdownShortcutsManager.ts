@@ -11,6 +11,7 @@ import {
   KEY_SPACE_COMMAND,
   type ElementNode,
   type LexicalEditor,
+  type LexicalNode,
   type RangeSelection,
   type TextNode,
   TextNode as TextNodeClass,
@@ -28,13 +29,15 @@ import {
 } from '@lexical/list';
 import { $createCodeNode } from '@lexical/code';
 import { $createContainerNode } from '../nodes/ContainerNode';
+import { $createHorizontalRuleNode } from '../nodes/HorizontalRuleNode';
 import { $safeSelectEnd } from '../utils/selection';
 
 type BlockRule = {
   regex: RegExp;
-  create: () => ElementNode;
+  create: () => LexicalNode;
   listType?: 'bullet' | 'number';
   isContainer?: boolean;
+  isDivider?: boolean;
 };
 
 /** Match text before the space key (space not yet inserted) */
@@ -45,6 +48,7 @@ const BLOCK_RULES_BEFORE_SPACE: BlockRule[] = [
   { regex: /^>$/, create: () => $createQuoteNode() },
   { regex: /^[-*]$/, create: () => $createListNode('bullet'), listType: 'bullet' },
   { regex: /^\d+\.$/, create: () => $createListNode('number'), listType: 'number' },
+  { regex: /^---$/, create: () => $createHorizontalRuleNode(), isDivider: true },
   { regex: /^:::(info|note)$/, create: () => $createContainerNode({ variant: 'info', icon: 'info' }), isContainer: true },
   { regex: /^:::(tip|success)$/, create: () => $createContainerNode({ variant: 'success', icon: 'lightbulb' }), isContainer: true },
   { regex: /^:::(warning|caution)$/, create: () => $createContainerNode({ variant: 'warning', icon: 'warning' }), isContainer: true },
@@ -60,6 +64,7 @@ const BLOCK_RULES_WITH_SPACE: BlockRule[] = [
   { regex: /^>\s$/, create: () => $createQuoteNode() },
   { regex: /^[-*]\s$/, create: () => $createListNode('bullet'), listType: 'bullet' },
   { regex: /^\d+\.\s$/, create: () => $createListNode('number'), listType: 'number' },
+  { regex: /^---\s$/, create: () => $createHorizontalRuleNode(), isDivider: true },
   { regex: /^```$/, create: () => $createCodeNode() },
   { regex: /^:::(info|note)\s$/, create: () => $createContainerNode({ variant: 'info', icon: 'info' }), isContainer: true },
   { regex: /^:::(tip|success)\s$/, create: () => $createContainerNode({ variant: 'success', icon: 'lightbulb' }), isContainer: true },
@@ -153,6 +158,7 @@ function applyBlockRule(selection: RangeSelection, rule: BlockRule): boolean {
 
   if (rule.isContainer) {
     const container = rule.create();
+    if (!$isElementNode(container)) return false;
     const p = $createParagraphNode();
     const textNode = $createTextNode(remaining);
     p.append(textNode);
@@ -167,7 +173,29 @@ function applyBlockRule(selection: RangeSelection, rule: BlockRule): boolean {
     return true;
   }
 
+  if (rule.isDivider) {
+    const hr = rule.create();
+    parent.replace(hr);
+    const nextP = $createParagraphNode();
+    if (remaining) {
+      nextP.append($createTextNode(remaining));
+    }
+    hr.insertAfter(nextP);
+    if (remaining) {
+      const textChild = nextP.getFirstChild();
+      if ($isTextNode(textChild)) {
+        textChild.select(remaining.length, remaining.length);
+      } else {
+        $safeSelectEnd(nextP);
+      }
+    } else {
+      $safeSelectEnd(nextP);
+    }
+    return true;
+  }
+
   const newNode = rule.create();
+  if (!$isElementNode(newNode)) return false;
   const textNode = $createTextNode(remaining);
   newNode.append(textNode);
   parent.replace(newNode);
