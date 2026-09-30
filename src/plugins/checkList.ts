@@ -17,7 +17,7 @@ import {
   $isListItemNode,
   $isListNode,
   INSERT_CHECK_LIST_COMMAND,
-  insertList,
+  $insertList,
 } from '@lexical/list';
 import { mergeRegister } from '@lexical/utils';
 
@@ -32,7 +32,7 @@ export function registerCheckList(editor: LexicalEditor): () => void {
     editor.registerCommand(
       INSERT_CHECK_LIST_COMMAND,
       () => {
-        insertList(editor, 'check');
+        $insertList('check');
         return true;
       },
       COMMAND_PRIORITY_LOW,

@@ -1,5 +1,12 @@
-import { registerCodeHighlighting } from '@lexical/code';
-import type { LexicalEditor } from 'lexical';
+import { registerCodeHighlighting, type Tokenizer } from '@lexical/code-prism';
+
+interface Token {
+  type: string;
+  alias: string | string[];
+  content: string | Token | (string | Token)[];
+}
+import { $createCodeHighlightNode, type CodeNode } from '@lexical/code';
+import { $createLineBreakNode, $createTabNode, type LexicalEditor, type LexicalNode } from 'lexical';
 import { createLowlight } from 'lowlight';
 
 // Common languages (keep bundle reasonable)
@@ -15,17 +22,6 @@ import sql from 'highlight.js/lib/languages/sql';
 import java from 'highlight.js/lib/languages/java';
 import go from 'highlight.js/lib/languages/go';
 import rust from 'highlight.js/lib/languages/rust';
-
-/** Mirror @lexical/code Tokenizer shape (not always re-exported from package root). */
-interface Token {
-  type: string;
-  content: string | Token | (string | Token)[];
-}
-
-interface Tokenizer {
-  defaultLanguage: string;
-  tokenize(code: string, language?: string): (string | Token)[];
-}
 
 const lowlight = createLowlight({
   javascript,
@@ -80,13 +76,40 @@ function hastToTokens(nodes: HastNode[] | undefined): (string | Token)[] {
           .find((c) => c && c !== 'hljs') ?? 'plain';
       const content = hastToTokens(node.children);
       if (content.length === 1 && typeof content[0] === 'string') {
-        out.push({ type, content: content[0] });
+        out.push({ type, alias: '', content: content[0] });
       } else if (content.length > 0) {
-        out.push({ type, content });
+        out.push({ type, alias: '', content });
       }
     }
   }
   return out;
+}
+
+function $mapTokensToLexicalStructure(tokens: (string | Token)[], defaultType?: string): LexicalNode[] {
+  const nodes: LexicalNode[] = [];
+  for (const token of tokens) {
+    if (typeof token === 'string') {
+      const parts = token.split(/(\r?\n|\t)/);
+      for (const part of parts) {
+        if (!part) continue;
+        if (part === '\n' || part === '\r\n') {
+          nodes.push($createLineBreakNode());
+        } else if (part === '\t') {
+          nodes.push($createTabNode());
+        } else {
+          nodes.push($createCodeHighlightNode(part, defaultType));
+        }
+      }
+    } else {
+      const { content, type } = token;
+      if (typeof content === 'string') {
+        nodes.push(...$mapTokensToLexicalStructure([content], type));
+      } else if (Array.isArray(content)) {
+        nodes.push(...$mapTokensToLexicalStructure(content, type));
+      }
+    }
+  }
+  return nodes;
 }
 
 export const LowlightTokenizer: Tokenizer = {
@@ -109,13 +132,20 @@ export const LowlightTokenizer: Tokenizer = {
       return [code];
     }
   },
+  $tokenize(codeNode: CodeNode, language?: string): LexicalNode[] {
+    const lang = language || this.defaultLanguage || 'javascript';
+    const code = codeNode.getTextContent();
+    const tokens = this.tokenize(code, lang);
+    return $mapTokensToLexicalStructure(tokens);
+  },
 };
 
 /**
  * Register code highlighting powered by lowlight (highlight.js grammars).
  */
 export function registerLowlightCodeHighlighting(editor: LexicalEditor): () => void {
-  return registerCodeHighlighting(editor, LowlightTokenizer as never);
+  return registerCodeHighlighting(editor, LowlightTokenizer);
 }
 
 export { lowlight };
+
