@@ -141,6 +141,42 @@ export function enhanceHtmlForPreview(html: string): string {
       table.classList.add('uni-table');
     });
 
+    // ── Code tabs initialization ─────────────────────────────────────
+    doc.querySelectorAll('.code-tabs-wrapper').forEach((wrapper) => {
+      const activeBtn = wrapper.querySelector('.code-tab-btn.active');
+      if (!activeBtn) {
+        const firstBtn = wrapper.querySelector('.code-tab-btn');
+        firstBtn?.classList.add('active');
+        const firstPanel = wrapper.querySelector('.code-tab-panel');
+        firstPanel?.classList.add('active');
+      }
+    });
+
+    // ── Mermaid Diagram Blocks ─────────────────────────────────────────
+    doc
+      .querySelectorAll(
+        'pre[data-highlight-language="mermaid"], pre[data-language="mermaid"], pre.language-mermaid, pre.uni-code-block[data-highlight-language="mermaid"]',
+      )
+      .forEach((target) => {
+        const pre = (target.tagName === 'PRE' ? target : target.closest('pre')) as HTMLElement | null;
+        if (!pre || pre.closest('.mermaid-diagram-block')) return;
+
+        const wrap = doc.createElement('div');
+        wrap.className = 'mermaid-diagram-block';
+        const header = doc.createElement('div');
+        header.className = 'mermaid-header';
+        header.innerHTML =
+          '<span class="mermaid-badge"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg> Mermaid Diagram</span>';
+
+        const newPre = doc.createElement('pre');
+        newPre.className = 'mermaid';
+        newPre.textContent = pre.textContent?.trim() || '';
+
+        wrap.appendChild(header);
+        wrap.appendChild(newPre);
+        pre.parentNode?.replaceChild(wrap, pre);
+      });
+
     return doc.body.innerHTML;
   } catch {
     return html;

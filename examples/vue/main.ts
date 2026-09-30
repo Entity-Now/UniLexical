@@ -12,7 +12,18 @@ const App = {
     const editor = shallowRef<UniEditor | null>(null);
     const initialMd = `# Vue 3 + UniLexical
 
-Only **bold**, *italic*, underline on the toolbar.
+## v1.0.3 Features
+
+- Press Tab to indent list items
+  - Nested item A
+    - Nested item B
+- Press Shift+Tab to outdent
+
+> Drag list items and blocks using the drag handle.
+
+:::info
+Callout preview support is enabled.
+:::
 
 > Live preview updates as you type.
 `;

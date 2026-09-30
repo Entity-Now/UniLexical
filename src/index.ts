@@ -95,8 +95,14 @@ export { SlashCommandController, DEFAULT_SLASH_ITEMS } from './plugins/SlashComm
 export { ToolbarController } from './plugins/ToolbarController';
 export { BlockOverlayController } from './plugins/BlockOverlayController';
 export type { BlockContentKind, BlockInfo } from './plugins/BlockOverlayController';
-export { BlockMenuUI } from './ui/BlockMenuUI';
-export { SerializationRegistry } from './plugins/SerializationRegistry';
+export { SerializationRegistry, exportHtml, exportMarkdown, exportJson } from './plugins/SerializationRegistry';
+export {
+  CONTAINER_TRANSFORMER,
+  CUSTOM_CODE_TRANSFORMER,
+  UNI_TRANSFORMERS,
+  parseContainerDirective,
+  variantToDirective,
+} from './plugins/markdownTransformers';
 export { ImageController } from './plugins/ImageController';
 export { AttachmentController } from './plugins/AttachmentController';
 export { BlockExtrasController } from './plugins/BlockExtrasController';

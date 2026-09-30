@@ -767,3 +767,232 @@
 .uni-preview .uni-attachment:hover {
   text-decoration: underline !important;
 }
+
+/* ── VitePress / VuePress Custom Containers ─────────────────────────── */
+
+.uni-preview .custom-block {
+  margin: 1.25rem 0 !important;
+  padding: 1rem 1.25rem !important;
+  border-radius: 8px !important;
+  border: 1px solid transparent !important;
+  position: relative !important;
+  background-color: #f8fafc !important;
+}
+
+.uni-preview .custom-block-title {
+  font-weight: 700 !important;
+  margin: 0 0 0.5rem 0 !important;
+  font-size: 0.95rem !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.5rem !important;
+}
+
+.uni-preview .custom-block.tip {
+  border-color: #86efac !important;
+  background-color: #f0fdf4 !important;
+  color: #14532d !important;
+}
+
+.uni-preview .custom-block.tip .custom-block-title {
+  color: #166534 !important;
+}
+
+.uni-preview .custom-block.warning {
+  border-color: #fde047 !important;
+  background-color: #fefce8 !important;
+  color: #713f12 !important;
+}
+
+.uni-preview .custom-block.warning .custom-block-title {
+  color: #854d0e !important;
+}
+
+.uni-preview .custom-block.danger {
+  border-color: #fca5a5 !important;
+  background-color: #fef2f2 !important;
+  color: #7f1d1d !important;
+}
+
+.uni-preview .custom-block.danger .custom-block-title {
+  color: #991b1b !important;
+}
+
+.uni-preview .custom-block.info,
+.uni-preview .custom-block.note {
+  border-color: #93c5fd !important;
+  background-color: #eff6ff !important;
+  color: #1e3a8a !important;
+}
+
+.uni-preview .custom-block.info .custom-block-title,
+.uni-preview .custom-block.note .custom-block-title {
+  color: #1d4ed8 !important;
+}
+
+.uni-preview details.custom-block.details {
+  border-color: #cbd5e1 !important;
+  background-color: #f8fafc !important;
+}
+
+.uni-preview details.custom-block.details summary {
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  outline: none !important;
+  user-select: none !important;
+}
+
+/* ── Code Tabs Container ─────────────────────────────────────────────── */
+
+.uni-preview .code-tabs-wrapper {
+  margin: 1.5rem 0 !important;
+  border-radius: 8px !important;
+  border: 1px solid var(--uni-preview-border, #e5e7eb) !important;
+  overflow: hidden !important;
+  background: #f8fafc !important;
+}
+
+.uni-preview .code-tabs-header {
+  display: flex !important;
+  background-color: #f1f5f9 !important;
+  border-bottom: 1px solid var(--uni-preview-border, #e5e7eb) !important;
+  overflow-x: auto !important;
+}
+
+.uni-preview .code-tab-btn {
+  padding: 0.6rem 1.2rem !important;
+  font-size: 0.88rem !important;
+  font-weight: 500 !important;
+  color: #64748b !important;
+  background: transparent !important;
+  border: none !important;
+  border-bottom: 2px solid transparent !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  white-space: nowrap !important;
+}
+
+.uni-preview .code-tab-btn:hover {
+  color: #0f172a !important;
+  background-color: rgba(255, 255, 255, 0.5) !important;
+}
+
+.uni-preview .code-tab-btn.active {
+  color: var(--uni-preview-accent, #4f46e5) !important;
+  border-bottom-color: var(--uni-preview-accent, #4f46e5) !important;
+  background-color: #ffffff !important;
+  font-weight: 600 !important;
+}
+
+.uni-preview .code-tab-panel {
+  display: none !important;
+}
+
+.uni-preview .code-tab-panel.active {
+  display: block !important;
+}
+
+.uni-preview .code-tab-panel pre {
+  margin: 0 !important;
+  border: none !important;
+  border-radius: 0 !important;
+}
+
+/* ── Steps Timeline Container ────────────────────────────────────────── */
+
+.uni-preview .custom-block-steps {
+  margin: 1.5rem 0 !important;
+  padding-left: 0.5rem !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 0.75rem !important;
+}
+
+.uni-preview .step-card {
+  display: flex !important;
+  align-items: flex-start !important;
+  gap: 1rem !important;
+  position: relative !important;
+}
+
+.uni-preview .step-card:not(:last-child)::after {
+  content: '' !important;
+  position: absolute !important;
+  left: 14px !important;
+  top: 30px !important;
+  bottom: -12px !important;
+  width: 2px !important;
+  background-color: #e2e8f0 !important;
+}
+
+.uni-preview .step-badge {
+  width: 30px !important;
+  height: 30px !important;
+  border-radius: 50% !important;
+  background-color: var(--uni-preview-accent, #4f46e5) !important;
+  color: #ffffff !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-weight: 700 !important;
+  font-size: 0.9rem !important;
+  flex-shrink: 0 !important;
+  box-shadow: 0 2px 4px rgba(79, 70, 229, 0.25) !important;
+  z-index: 1 !important;
+}
+
+.uni-preview .step-content {
+  flex: 1 !important;
+  padding-top: 3px !important;
+  line-height: 1.6 !important;
+  color: inherit !important;
+  font-size: 0.98rem !important;
+}
+
+/* ── Mermaid Diagram Container ───────────────────────────────────────── */
+
+.uni-preview .mermaid-diagram-block {
+  margin: 1.5rem 0 !important;
+  border: 1px solid #dcfce7 !important;
+  border-radius: 8px !important;
+  background-color: #f0fdf4 !important;
+  overflow: hidden !important;
+}
+
+.uni-preview .mermaid-header {
+  padding: 0.5rem 1rem !important;
+  background-color: #dcfce7 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+}
+
+.uni-preview .mermaid-badge {
+  font-size: 0.8rem !important;
+  font-weight: 600 !important;
+  color: #166534 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.35rem !important;
+}
+
+.uni-preview .mermaid-diagram-block pre.mermaid {
+  margin: 0 !important;
+  padding: 1rem !important;
+  background-color: transparent !important;
+  font-family: var(--uni-preview-mono, monospace) !important;
+  font-size: 0.9rem !important;
+  color: #1e293b !important;
+  overflow-x: auto !important;
+  white-space: pre-wrap !important;
+}
+
+/* ── Abbreviation Tooltip ─────────────────────────────────────────────── */
+
+.uni-preview .md-abbr {
+  text-decoration: underline dotted #64748b !important;
+  cursor: help !important;
+  color: var(--uni-preview-accent, #4f46e5) !important;
+  font-weight: 500 !important;
+}
+

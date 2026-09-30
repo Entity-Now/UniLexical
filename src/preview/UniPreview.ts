@@ -48,6 +48,7 @@ export class UniPreview {
   /** Local open overrides by toggle index (survives live HTML refresh). */
   private toggleOpenOverrides = new Map<number, boolean>();
   private onToggleClick: ((e: MouseEvent) => void) | null = null;
+  private onCodeTabClick: ((e: MouseEvent) => void) | null = null;
 
   constructor(container: string | HTMLElement, options: UniPreviewOptions = {}) {
     const el =
@@ -72,6 +73,7 @@ export class UniPreview {
     if (this.interactiveToggles) {
       this.bindToggleInteraction();
     }
+    this.bindCodeTabsInteraction();
 
     if (options.html != null) {
       this.setHtml(options.html);
@@ -138,7 +140,35 @@ export class UniPreview {
       this.root.removeEventListener('click', this.onToggleClick);
       this.onToggleClick = null;
     }
+    if (this.onCodeTabClick) {
+      this.root.removeEventListener('click', this.onCodeTabClick);
+      this.onCodeTabClick = null;
+    }
     this.root.remove();
+  }
+
+  private bindCodeTabsInteraction(): void {
+    this.onCodeTabClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (!target) return;
+      const btn = target.closest('.code-tab-btn') as HTMLButtonElement | null;
+      if (!btn || !this.root.contains(btn)) return;
+
+      const wrapper = btn.closest('.code-tabs-wrapper');
+      if (!wrapper) return;
+      const tabIndex = btn.getAttribute('data-tab-index');
+      if (tabIndex === null) return;
+
+      e.preventDefault();
+      wrapper.querySelectorAll<HTMLButtonElement>('.code-tab-btn').forEach((b) => {
+        b.classList.toggle('active', b.getAttribute('data-tab-index') === tabIndex);
+      });
+      wrapper.querySelectorAll<HTMLElement>('.code-tab-panel').forEach((p) => {
+        p.classList.toggle('active', p.getAttribute('data-tab-index') === tabIndex);
+      });
+    };
+
+    this.root.addEventListener('click', this.onCodeTabClick);
   }
 
   private bindToggleInteraction(): void {

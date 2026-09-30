@@ -698,7 +698,6 @@ export class BlockOverlayController {
         return;
       }
 
-      // Rebuild from kind + text (keeps type; nested rich structure simplified)
       const kind = $detectBlockKind(node.getFirstChild());
       const text = node.getTextContent();
       const fresh = this.$createContentForKind(kind, text);

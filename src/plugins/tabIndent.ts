@@ -43,8 +43,10 @@ export function registerTabIndent(editor: LexicalEditor): () => void {
 
       const listItem = $findListItem(anchor);
       if (listItem) {
-        const next = listItem.getIndent() + (event.shiftKey ? -1 : 1);
-        if (next >= 0) listItem.setIndent(next);
+        editor.dispatchCommand(
+          event.shiftKey ? OUTDENT_CONTENT_COMMAND : INDENT_CONTENT_COMMAND,
+          undefined,
+        );
         return true;
       }
 

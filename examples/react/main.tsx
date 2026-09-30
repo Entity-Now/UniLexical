@@ -55,7 +55,7 @@ function App() {
             ]}
             placeholder="React 封装示例…"
             initialContent={
-              '# React + UniLexical\n\nToolbar limited set.\n\n> Live preview updates as you type.\n'
+              '# React + UniLexical\n\n## v1.0.3 Features\n\n- Press Tab to indent list items\n  - Nested item A\n    - Nested item B\n- Press Shift+Tab to outdent\n\n> Drag list items and blocks using the drag handle.\n\n:::info\nCallout preview support is enabled.\n:::\n\n> Live preview updates as you type.\n'
             }
             initialFormat="markdown"
             onChange={({ html: next }) => setHtml(next)}

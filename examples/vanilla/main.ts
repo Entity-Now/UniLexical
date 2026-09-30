@@ -19,6 +19,19 @@ Type \`/\` for the slash menu. Try markdown shortcuts:
 - Wrap text with *italic* or **bold**
 
 Hover a block to reveal **+** and the drag handle.
+
+## v1.0.3 Features
+
+- Press Tab to indent list items
+  - Nested item A
+    - Nested item B
+- Press Shift+Tab to outdent
+
+> Drag list items and blocks using the drag handle.
+
+:::info
+Callout preview support is enabled.
+:::
 `,
   initialFormat: 'markdown',
 });

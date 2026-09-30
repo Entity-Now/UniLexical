@@ -1,4 +1,5 @@
 import {
+  $createParagraphNode,
   $createTextNode,
   $getSelection,
   $isElementNode,
@@ -26,12 +27,14 @@ import {
   $isListItemNode,
 } from '@lexical/list';
 import { $createCodeNode } from '@lexical/code';
+import { $createContainerNode } from '../nodes/ContainerNode';
 import { $safeSelectEnd } from '../utils/selection';
 
 type BlockRule = {
   regex: RegExp;
   create: () => ElementNode;
   listType?: 'bullet' | 'number';
+  isContainer?: boolean;
 };
 
 /** Match text before the space key (space not yet inserted) */
@@ -42,6 +45,11 @@ const BLOCK_RULES_BEFORE_SPACE: BlockRule[] = [
   { regex: /^>$/, create: () => $createQuoteNode() },
   { regex: /^[-*]$/, create: () => $createListNode('bullet'), listType: 'bullet' },
   { regex: /^\d+\.$/, create: () => $createListNode('number'), listType: 'number' },
+  { regex: /^:::(info|note)$/, create: () => $createContainerNode({ variant: 'info', icon: 'info' }), isContainer: true },
+  { regex: /^:::(tip|success)$/, create: () => $createContainerNode({ variant: 'success', icon: 'lightbulb' }), isContainer: true },
+  { regex: /^:::(warning|caution)$/, create: () => $createContainerNode({ variant: 'warning', icon: 'warning' }), isContainer: true },
+  { regex: /^:::(danger|error)$/, create: () => $createContainerNode({ variant: 'error', icon: 'error' }), isContainer: true },
+  { regex: /^:::$/, create: () => $createContainerNode({ variant: 'info', icon: 'info' }), isContainer: true },
 ];
 
 /** Match text that already includes trailing space */
@@ -53,6 +61,11 @@ const BLOCK_RULES_WITH_SPACE: BlockRule[] = [
   { regex: /^[-*]\s$/, create: () => $createListNode('bullet'), listType: 'bullet' },
   { regex: /^\d+\.\s$/, create: () => $createListNode('number'), listType: 'number' },
   { regex: /^```$/, create: () => $createCodeNode() },
+  { regex: /^:::(info|note)\s$/, create: () => $createContainerNode({ variant: 'info', icon: 'info' }), isContainer: true },
+  { regex: /^:::(tip|success)\s$/, create: () => $createContainerNode({ variant: 'success', icon: 'lightbulb' }), isContainer: true },
+  { regex: /^:::(warning|caution)\s$/, create: () => $createContainerNode({ variant: 'warning', icon: 'warning' }), isContainer: true },
+  { regex: /^:::(danger|error)\s$/, create: () => $createContainerNode({ variant: 'error', icon: 'error' }), isContainer: true },
+  { regex: /^:::\s$/, create: () => $createContainerNode({ variant: 'info', icon: 'info' }), isContainer: true },
 ];
 
 const INLINE_RULES: Array<{
@@ -134,6 +147,22 @@ function applyBlockRule(selection: RangeSelection, rule: BlockRule): boolean {
       textNode.select(len, len);
     } else {
       $safeSelectEnd(item);
+    }
+    return true;
+  }
+
+  if (rule.isContainer) {
+    const container = rule.create();
+    const p = $createParagraphNode();
+    const textNode = $createTextNode(remaining);
+    p.append(textNode);
+    container.append(p);
+    parent.replace(container);
+    if (textNode.isAttached()) {
+      const len = textNode.getTextContentSize();
+      textNode.select(len, len);
+    } else {
+      $safeSelectEnd(p);
     }
     return true;
   }

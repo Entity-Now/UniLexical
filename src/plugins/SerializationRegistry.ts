@@ -7,12 +7,12 @@ import { $generateHtmlFromNodes, $generateNodesFromDOM } from '@lexical/html';
 import {
   $convertFromMarkdownString,
   $convertToMarkdownString,
-  TRANSFORMERS,
   type Transformer,
 } from '@lexical/markdown';
 import type { ContentFormat } from '../core/types';
 import { $normalizeRootBlocks } from './blockTransform';
 import { enhanceHtmlForPreview } from './previewEnhance';
+import { UNI_TRANSFORMERS } from './markdownTransformers';
 
 export interface FormatAdapter {
   exportToString(editor: LexicalEditor): string;
@@ -25,7 +25,7 @@ export interface FormatAdapter {
  */
 export class SerializationRegistry {
   private adapters = new Map<ContentFormat, FormatAdapter>();
-  private transformers: Transformer[] = TRANSFORMERS;
+  private transformers: Transformer[] = UNI_TRANSFORMERS;
 
   constructor(private editor: LexicalEditor) {
     this.registerDefaults();
@@ -92,7 +92,9 @@ export class SerializationRegistry {
         editor.update(() => {
           const root = $getRoot();
           root.clear();
-          $convertFromMarkdownString(content, this.transformers);
+          // Normalize line endings (\r\n -> \n) to prevent CRLF from breaking multiline code/container blocks
+          const normalized = content.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+          $convertFromMarkdownString(normalized, this.transformers);
           $normalizeRootBlocks();
         });
       },
@@ -179,7 +181,7 @@ export function exportHtml(editor: LexicalEditor): string {
   return cleanExportedHtml(html);
 }
 
-export function exportMarkdown(editor: LexicalEditor, transformers = TRANSFORMERS): string {
+export function exportMarkdown(editor: LexicalEditor, transformers = UNI_TRANSFORMERS): string {
   let md = '';
   editor.getEditorState().read(() => {
     md = $convertToMarkdownString(transformers);

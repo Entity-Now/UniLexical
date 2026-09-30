@@ -154,16 +154,41 @@ export class ContainerNode extends ElementNode {
   static importDOM(): DOMConversionMap | null {
     return {
       div: (dom) => {
-        if (!dom.hasAttribute('data-uni-container')) return null;
-        const icon = normalizeCalloutIcon(dom.getAttribute('data-icon'));
-        const variant = (dom.getAttribute('data-variant') ||
-          'default') as ContainerVariant;
-        return {
-          conversion: (): DOMConversionOutput => ({
-            node: $createContainerNode({ icon, variant }),
-          }),
-          priority: 1,
-        };
+        if (dom.hasAttribute('data-uni-container')) {
+          const icon = normalizeCalloutIcon(dom.getAttribute('data-icon'));
+          const variant = (dom.getAttribute('data-variant') ||
+            'default') as ContainerVariant;
+          return {
+            conversion: (): DOMConversionOutput => ({
+              node: $createContainerNode({ icon, variant }),
+            }),
+            priority: 1,
+          };
+        }
+        if (dom.classList.contains('custom-block')) {
+          let variant: ContainerVariant = 'default';
+          let icon = 'lightbulb';
+          if (dom.classList.contains('tip')) {
+            variant = 'success';
+            icon = 'lightbulb';
+          } else if (dom.classList.contains('warning')) {
+            variant = 'warning';
+            icon = 'alert-triangle';
+          } else if (dom.classList.contains('danger')) {
+            variant = 'error';
+            icon = 'alert-circle';
+          } else if (dom.classList.contains('info')) {
+            variant = 'info';
+            icon = 'info';
+          }
+          return {
+            conversion: (): DOMConversionOutput => ({
+              node: $createContainerNode({ icon, variant }),
+            }),
+            priority: 1,
+          };
+        }
+        return null;
       },
     };
   }
