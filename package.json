@@ -28,7 +28,10 @@
   "files": [
     "dist",
     "ARCHITECTURE.md",
-    "README.md"
+    "README.md",
+    "docs",
+    "llms.txt",
+    "llms-full.txt"
   ],
   "scripts": {
     "build": "tsup && node scripts/copy-css.mjs",

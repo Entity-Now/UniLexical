@@ -6,6 +6,8 @@
 </p>
 
 <p align="center">
+  <a href="./docs/index.md">📚 Documentation</a> ·
+  <a href="./llms.txt">🤖 LLMs.txt</a> ·
   <a href="#features">Features</a> ·
   <a href="#installation">Install</a> ·
   <a href="#quick-start">Quick start</a> ·

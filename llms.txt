@@ -1,0 +1,46 @@
+# UniLexical
+
+> Framework-agnostic, Notion-style block rich-text editor powered by Meta's Lexical engine. Features pure TypeScript core, thin Vue 3, React, and Vanilla JS wrappers, hover action handles, drag-and-drop block reordering, slash commands, real-time markdown shortcuts, GFM tables, and clean HTML/Markdown serialization.
+
+UniLexical decouples editor state, document schemas, and command handling from framework view layers. The core is 100% pure TypeScript, while Vue 3 and React bindings are thin lifecycle and reactivity adapters, guaranteeing identical editing behavior across stacks.
+
+## Documentation
+
+- [Documentation Index](docs/index.md): Master landing page organized following the Diátaxis technical documentation framework.
+- [Project Readme](README.md): Primary repository documentation, quickstart guides, and feature highlights.
+
+## Tutorials
+
+- [Getting Started Tutorial](docs/tutorials/getting-started.md): Step-by-step beginner guide to installing UniLexical and mounting an editor with live preview in Vanilla JS, Vue 3, or React.
+
+## How-to Guides
+
+- [Image and File Uploads](docs/how-to/image-and-file-upload.md): Configure custom S3, OSS, or REST API image/attachment uploaders, file size limits, paste screenshots, and drag-and-drop media.
+- [Toolbar and Slash Customization](docs/how-to/toolbar-and-shortcuts.md): Configure toolbar item subsets, register custom action buttons, customize the Notion-style `/` slash menu, and use markdown shortcuts.
+- [Tables, Callouts and Serialization](docs/how-to/markdown-and-tables.md): Work with GFM markdown tables, callout blocks (`:::info`), toggle blocks (`<details>`), and import/export clean Markdown and HTML.
+- [Headless Mode and Custom UI](docs/how-to/headless-and-custom-ui.md): Run the editor in headless mode (`builtinUI: false`) and build custom toolbars using Vue 3 and React `useLexical` hooks.
+
+## Reference
+
+- [Configuration Reference](docs/reference/configuration.md): Complete specifications for `UniEditorConfig`, `ImageOptions`, `AttachmentOptions`, and theme CSS classes.
+- [API and Methods Reference](docs/reference/api.md): Authoritative signatures for `UniEditor` methods, Vanilla `mountEditor`, Vue/React component props, events, and template refs.
+- [Toolbar and Slash Items Catalog](docs/reference/toolbar-slash-catalog.md): Complete dictionary of all 40+ `ToolbarItemId`s, default slash commands, and CSS class names.
+
+## Explanation
+
+- [Architecture and Block Model](docs/explanation/architecture-and-block-model.md): Deep architectural dive into the three-tier decoupled architecture, Notion-style `BlockWrapperNode`, reactivity bridge, and Lexical 0.52 migration details.
+
+## Specifications & Architecture
+
+- [Architecture Specification](ARCHITECTURE.md): Formal architectural blueprint, topology diagrams, module boundaries, and sequence diagrams.
+
+## Examples
+
+- [Vanilla JavaScript Example](examples/vanilla/main.ts): Complete runnable demonstration in Vanilla TypeScript showing editor and live preview.
+- [Vue 3 Example](examples/vue/main.ts): Complete runnable single-file component demonstration in Vue 3.
+- [React Example](examples/react/main.tsx): Complete runnable component demonstration in React 18+.
+
+## Optional
+
+- [Package Manifest](package.json): Package metadata, script commands, bundled dependencies, and export maps.
+- [Package Build Configuration](tsup.config.ts): Bundle build configuration for ESM, CJS, and TypeScript declaration outputs.
