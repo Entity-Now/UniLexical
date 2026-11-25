@@ -501,15 +501,27 @@
 
 /* ── Tables ──────────────────────────────────────────────────────────── */
 
+.uni-preview .uni-table-wrapper {
+  width: 100% !important;
+  max-width: 100% !important;
+  overflow-x: auto !important;
+  margin: 0.8em 0 !important;
+  -webkit-overflow-scrolling: touch;
+  border-radius: 6px !important;
+}
+
 .uni-preview table,
 .uni-preview .uni-table {
   border-collapse: collapse !important;
   border-spacing: 0 !important;
   width: 100% !important;
-  margin: 0.6em 0 !important;
-  table-layout: fixed !important;
+  min-width: 100% !important;
+  margin: 0 !important;
+  table-layout: auto !important;
   background: transparent !important;
-  border: none !important;
+  border: 1px solid var(--uni-preview-border, #e5e7eb) !important;
+  font-size: 0.9375rem !important;
+  line-height: 1.5 !important;
 }
 
 .uni-preview th,
@@ -517,19 +529,23 @@
 .uni-preview .uni-table-cell,
 .uni-preview .uni-table-cell-header {
   border: 1px solid var(--uni-preview-border, #e5e7eb) !important;
-  padding: 8px 10px !important;
+  padding: 8px 12px !important;
   vertical-align: top !important;
   word-break: break-word !important;
   color: inherit !important;
-  font-size: inherit !important;
   text-align: left !important;
   background: transparent !important;
 }
 
 .uni-preview th,
 .uni-preview .uni-table-cell-header {
-  background: var(--uni-preview-code-bg, #f3f4f6) !important;
+  background: var(--uni-preview-code-bg, #f8fafc) !important;
   font-weight: 600 !important;
+  color: var(--uni-preview-fg, #111827) !important;
+}
+
+.uni-preview tbody tr:nth-child(even) td {
+  background: rgba(243, 244, 246, 0.4) !important;
 }
 
 /* ── Container / callout ─────────────────────────────────────────────── */
@@ -985,6 +1001,21 @@
   color: #1e293b !important;
   overflow-x: auto !important;
   white-space: pre-wrap !important;
+}
+
+.uni-preview .mermaid-diagram-block .mermaid-svg-container {
+  padding: 1rem 1.25rem !important;
+  background-color: #ffffff !important;
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  overflow-x: auto !important;
+}
+
+.uni-preview .mermaid-diagram-block .mermaid-svg-container svg {
+  max-width: 100% !important;
+  height: auto !important;
+  display: block !important;
 }
 
 /* ── Abbreviation Tooltip ─────────────────────────────────────────────── */

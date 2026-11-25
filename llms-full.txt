@@ -1,0 +1,229 @@
+# UniLexical (Full Documentation Context)
+
+> Framework-agnostic, Notion-style block rich-text editor powered by Meta's Lexical engine.
+> Features pure TypeScript core, thin Vue 3, React, and Vanilla JS wrappers, hover action handles, drag-and-drop block reordering, slash commands, real-time markdown shortcuts, GFM tables, and clean HTML/Markdown serialization.
+
+---
+
+# 1. Overview & Architecture
+
+UniLexical is architected on a **Three-Tier Decoupled Architecture**:
+1. **Core Layer (TypeScript)**: Houses the Meta Lexical instance, custom `BlockWrapperNode` and `ImageNode`, markdown shortcuts, slash menu controller, drag-and-drop mechanics, and import/export serializers. No framework dependencies exist in this layer.
+2. **Reactivity & Lifecycle Bridge**: Translates Lexical's immutable update loop into lightweight framework-compatible notifications via a typed `EventEmitter`. Vue 3 wrappers isolate the instance inside `shallowRef` to prevent reactive proxy collisions; React wrappers use `useSyncExternalStore`.
+3. **Framework Wrappers**: Thin adapters for Vanilla JS (`mountEditor`), Vue 3 (`<UniLexical />`), and React (`<UniLexical />`).
+
+---
+
+# 2. Installation & Quick Start
+
+## Installation
+```bash
+# Core package
+npm install unilexical
+
+# For Vue 3
+npm install unilexical vue
+
+# For React
+npm install unilexical react react-dom
+```
+
+## Styles
+```ts
+import 'unilexical/style.css';   // Editor UI, toolbar, slash, tippy, overlay
+import 'unilexical/preview.css'; // Host-safe content preview styling (.uni-preview)
+```
+
+## Vanilla JavaScript
+```ts
+import { mountEditor, mountPreview } from 'unilexical';
+import 'unilexical/style.css';
+import 'unilexical/preview.css';
+
+const { editor, getMarkdown, getHtml, setContent, destroy } = mountEditor({
+  container: '#editor',
+  placeholder: "Type '/' for commands…",
+  initialContent: '# Welcome to UniLexical',
+  initialFormat: 'markdown',
+});
+
+const preview = mountPreview('#preview');
+preview.bindEditor(editor);
+
+editor.on('change', ({ html, markdown }) => {
+  console.log('Document updated:', { html, markdown });
+});
+```
+
+## Vue 3
+```vue
+<script setup lang="ts">
+import { ref } from 'vue';
+import { UniLexical, UniLexicalPreview } from 'unilexical/vue';
+import 'unilexical/style.css';
+import 'unilexical/preview.css';
+
+const html = ref('');
+</script>
+
+<template>
+  <UniLexical
+    initial-content="# Vue 3 UniLexical"
+    initial-format="markdown"
+    @change="(payload) => (html = payload.html)"
+  />
+  <UniLexicalPreview :html="html" />
+</template>
+```
+
+## React
+```tsx
+import React, { useState } from 'react';
+import { UniLexical, UniLexicalPreview } from 'unilexical/react';
+import 'unilexical/style.css';
+import 'unilexical/preview.css';
+
+export function Editor() {
+  const [html, setHtml] = useState('');
+  return (
+    <>
+      <UniLexical
+        initialContent="# React UniLexical"
+        initialFormat="markdown"
+        onChange={({ html }) => setHtml(html)}
+      />
+      <UniLexicalPreview html={html} />
+    </>
+  );
+}
+```
+
+---
+
+# 3. Configuration Reference (`UniEditorConfig`)
+
+| Option | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `container` | `string \| HTMLElement` | — | Vanilla only. CSS selector or DOM element. |
+| `placeholder` | `string` | `"Type '/' for commands…"` | Placeholder text when document is empty. |
+| `namespace` | `string` | `"UniLexical"` | Lexical namespace for clipboard isolation. |
+| `editable` | `boolean` | `true` | Enable or disable editing. |
+| `builtinUI` | `boolean` | `true` | When `true`, mounts built-in toolbar, slash menu, and hover overlay. Set `false` for headless. |
+| `toolbarItems` | `ToolbarItemId[]` | *All features* | Subset and order of visible toolbar buttons. Omit for full toolbar. |
+| `initialContent` | `string` | — | Initial document content. |
+| `initialFormat` | `'html' \| 'markdown' \| 'json'` | `'markdown'` | Format of `initialContent`. |
+| `imageOptions` | `ImageOptions` | `{}` | Image upload, accept types, and size validation. |
+| `attachmentOptions` | `AttachmentOptions` | `{}` | File attachment upload and size validation. |
+| `tableMaxSize` | `{ rows: number; cols: number }` | `{ rows: 5, cols: 5 }` | Table picker grid dimensions. |
+| `theme` | `UniEditorTheme` | *Default theme* | Custom CSS class name overrides. |
+| `nodes` | `Array<Klass<LexicalNode>>` | `[]` | Extra custom Lexical node classes. |
+| `onCustomAction` | `() => void` | — | Handler for `'custom'` toolbar button. |
+
+## ImageOptions
+```ts
+imageOptions: {
+  upload: async (file: File) => {
+    // Return remote public HTTPS URL string
+    return 'https://cdn.example.com/image.png';
+  },
+  accept: 'image/png,image/jpeg,image/webp,image/gif',
+  maxSize: 8 * 1024 * 1024, // 8MB limit
+}
+```
+*If `upload` is omitted, images are embedded directly as base64 Data URLs.*
+
+---
+
+# 4. API Reference (`UniEditor`)
+
+## Content Methods
+- `getContent(format?: 'json' | 'html' | 'markdown'): string`
+- `setContent(content: string, format?: 'json' | 'html' | 'markdown'): void`
+- `getHtml(): string` - Returns clean semantic HTML (strips internal block wrappers).
+- `getMarkdown(): string` - Returns clean GFM Markdown.
+- `getJson(): string` - Returns serialized Lexical EditorState JSON.
+- `insertImageFile(file: File): Promise<void>`
+- `insertImageUrl(src: string, alt?: string): void`
+- `insertTable(rows: number, cols: number): void`
+
+## State & Control Methods
+- `setEditable(editable: boolean): void`
+- `setToolbarItems(items: ToolbarItemId[]): void` - Dynamically change toolbar buttons at runtime.
+- `getToolbarState(): ToolbarState` - Get snapshot of current formatting flags (isBold, isItalic, etc.).
+- `setSlashItems(items: SlashMenuItem[]): void` - Customize slash popup commands.
+- `execToolbar(item: ToolbarItemId): void` - Programmatically click a toolbar button.
+- `focus(): void` / `blur(): void`
+- `getLexicalEditor(): LexicalEditor` - Access underlying Lexical instance.
+- `destroy(): void` - Full cleanup of event listeners and DOM elements.
+
+## Events (`editor.on(name, handler)`)
+- `ready`: Editor initialized and mounted.
+- `change`: `{ html, markdown, json }` document mutated (debounced).
+- `toolbarChange`: Selection/formatting state updated.
+- `slashTriggered`: Slash popup opened, searched, or closed.
+- `blockHoverChanged`: Pointer hovered over different block line.
+- `paste`: Media or text pasted.
+- `fullscreenChange`: Fullscreen toggled.
+- `sourceModeChange`: Raw HTML source mode toggled.
+- `customAction`: Custom toolbar button clicked.
+- `error`: Internal Lexical transaction error.
+- `destroy`: Instance destroyed.
+
+---
+
+# 5. Toolbar & Slash Items Catalog
+
+## Toolbar Items (`ToolbarItemId`)
+- **History**: `undo`, `redo`
+- **Inline Format**: `bold`, `italic`, `underline`, `strike`, `code`, `highlight`, `subscript`, `superscript`, `painter`, `eraser`
+- **Typography**: `fontColor`, `fontFamily`, `fontSize`, `lineHeight`
+- **Blocks**: `heading`, `heading1` … `heading6`, `paragraph`, `quote`, `codeBlock`, `container`, `toggle`, `datetime`
+- **Lists**: `bulletList`, `orderedList`, `todo`
+- **Alignment**: `align`, `alignLeft`, `alignCenter`, `alignRight`, `alignJustify`, `indentIncrease`, `indentDecrease`
+- **Insert**: `link`, `image`, `attachment`, `table`, `tableCellBackgroundColor`, `hr`, `break`, `emoji`, `custom`
+- **View**: `sourceCode`, `fullscreen`, `printer`
+- **Layout**: `divider`, `group`
+
+## Markdown Typing Shortcuts
+- `# ` to `###### `: Heading 1 to Heading 6
+- `> `: Blockquote
+- `- ` or `* `: Bullet list
+- `1. `: Numbered list
+- `- [ ] `: Checklist
+- `---` or `***`: Horizontal rule
+- ` ```lang `: Code block
+- `:::info` / `:::tip` / `:::warning` / `:::danger`: Callout container
+- `| Col A | Col B |`: GFM Table
+- `**bold**`, `*italic*`, `~~strike~~`, `` `code` ``: Inline formats
+
+---
+
+# 6. Headless Mode & Custom UI
+
+Set `builtinUI: false` and utilize `useLexical` to bind your custom component library or Tailwind UI:
+
+```vue
+<!-- Vue 3 Headless -->
+<script setup lang="ts">
+import { useLexical } from 'unilexical/vue';
+const { containerRef, toolbarState, execToolbar } = useLexical({ builtinUI: false });
+</script>
+<template>
+  <button :class="{ active: toolbarState.isBold }" @click="execToolbar('bold')">Bold</button>
+  <div ref="containerRef" />
+</template>
+```
+
+```tsx
+// React Headless
+import { useLexical } from 'unilexical/react';
+export function HeadlessEditor() {
+  const { containerRef, toolbarState, execToolbar } = useLexical({ builtinUI: false });
+  return (
+    <>
+      <button onClick={() => execToolbar('bold')}>Bold</button>
+      <div ref={containerRef} />
+    </>
+  );
+}
+```

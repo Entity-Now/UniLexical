@@ -32,6 +32,14 @@ Hover a block to reveal **+** and the drag handle.
 :::info
 Callout preview support is enabled.
 :::
+
+## Tables & Markdown Support
+
+| Feature | Supported | Notes |
+| :--- | :---: | :--- |
+| Table Import/Export | **Yes** | GFM Markdown Tables |
+| Divider / HR | **Yes** | \`---\` |
+| Image Syntax | **Yes** | \`![alt](url)\` |
 `,
   initialFormat: 'markdown',
 });
