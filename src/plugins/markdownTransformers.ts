@@ -196,7 +196,8 @@ export const TABLE_TRANSFORMER: MultilineElementTransformer = {
         );
         const p = $createParagraphNode();
         if (text) {
-          $convertFromMarkdownString(text, INLINE_TRANSFORMERS, p);
+          const normalizedCell = text.replace(/<br\s*\/?>/gi, ' ');
+          $convertFromMarkdownString(normalizedCell, INLINE_TRANSFORMERS, p);
         }
         if (p.getChildrenSize() === 0) {
           p.append($createTextNode(''));
@@ -365,8 +366,9 @@ export const CUSTOM_CODE_TRANSFORMER: MultilineElementTransformer = {
     _isImport: boolean,
   ) => {
     const info = (startMatch[2] || '').trim();
-    // First token is language; any subsequent tokens (like "[4]" or "{1-3}") are attributes/metadata
-    const [lang] = info.split(/\s+/);
+    // First token is language; strip VuePress/VitePress fence modifiers like ":no-line-numbers", "[4]", "{1-3}"
+    const [rawLang] = info.split(/[\s{:[\]]+/);
+    const lang = rawLang ? rawLang.toLowerCase() : '';
     const codeNode = $createCodeNode(lang || undefined);
 
     let codeContent = '';

@@ -167,14 +167,18 @@ export function enhanceHtmlForPreview(html: string): string {
     // ── Mermaid Diagram Blocks ─────────────────────────────────────────
     doc
       .querySelectorAll(
-        'pre[data-highlight-language="mermaid"], pre[data-language="mermaid"], pre.language-mermaid, pre.uni-code-block[data-highlight-language="mermaid"]',
+        'pre[data-highlight-language="mermaid"], pre[data-language="mermaid"], pre.language-mermaid, pre.uni-code-block[data-highlight-language="mermaid"], pre > code.language-mermaid',
       )
       .forEach((target) => {
         const pre = (target.tagName === 'PRE' ? target : target.closest('pre')) as HTMLElement | null;
         if (!pre || pre.closest('.mermaid-diagram-block')) return;
 
+        const clonePre = pre.cloneNode(true) as HTMLElement;
+        clonePre.querySelectorAll('br').forEach((br) => br.replaceWith('\n'));
+        const sourceText = clonePre.textContent?.trim() || '';
         const wrap = doc.createElement('div');
         wrap.className = 'mermaid-diagram-block';
+        wrap.setAttribute('data-mermaid-code', sourceText);
         const header = doc.createElement('div');
         header.className = 'mermaid-header';
         header.innerHTML =
@@ -182,7 +186,7 @@ export function enhanceHtmlForPreview(html: string): string {
 
         const newPre = doc.createElement('pre');
         newPre.className = 'mermaid';
-        newPre.textContent = pre.textContent?.trim() || '';
+        newPre.textContent = sourceText;
 
         wrap.appendChild(header);
         wrap.appendChild(newPre);

@@ -1003,6 +1003,21 @@
   white-space: pre-wrap !important;
 }
 
+.uni-preview .mermaid-diagram-block .mermaid-svg-container {
+  padding: 1rem 1.25rem !important;
+  background-color: #ffffff !important;
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  overflow-x: auto !important;
+}
+
+.uni-preview .mermaid-diagram-block .mermaid-svg-container svg {
+  max-width: 100% !important;
+  height: auto !important;
+  display: block !important;
+}
+
 /* ── Abbreviation Tooltip ─────────────────────────────────────────────── */
 
 .uni-preview .md-abbr {

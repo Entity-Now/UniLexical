@@ -22,6 +22,10 @@ import sql from 'highlight.js/lib/languages/sql';
 import java from 'highlight.js/lib/languages/java';
 import go from 'highlight.js/lib/languages/go';
 import rust from 'highlight.js/lib/languages/rust';
+import csharp from 'highlight.js/lib/languages/csharp';
+import yaml from 'highlight.js/lib/languages/yaml';
+import powershell from 'highlight.js/lib/languages/powershell';
+import plaintext from 'highlight.js/lib/languages/plaintext';
 
 const lowlight = createLowlight({
   javascript,
@@ -32,11 +36,14 @@ const lowlight = createLowlight({
   jsx: javascript,
   xml,
   html: xml,
+  vue: xml,
   css,
   json,
   bash,
   shell: bash,
   sh: bash,
+  powershell,
+  ps1: powershell,
   python,
   py: python,
   markdown,
@@ -45,6 +52,13 @@ const lowlight = createLowlight({
   java,
   go,
   rust,
+  csharp,
+  cs: csharp,
+  yaml,
+  yml: yaml,
+  plaintext,
+  text: plaintext,
+  txt: plaintext,
 });
 
 type HastNode = {

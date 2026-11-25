@@ -75,8 +75,8 @@ export class SerializationRegistry {
           const enhanced = enhanceHtmlForPreview(content);
           const dom = parser.parseFromString(wrapHtmlFragment(enhanced), 'text/html');
 
-          // Unwrap table wrappers so tables are direct children
-          dom.querySelectorAll('.uni-table-wrapper').forEach((wrap) => {
+          // Unwrap table & legacy image wrappers so block nodes are direct children
+          dom.querySelectorAll('.uni-table-wrapper, .table-responsive, .editor-image-wrapper').forEach((wrap) => {
             const parent = wrap.parentNode;
             if (parent) {
               while (wrap.firstChild) parent.insertBefore(wrap.firstChild, wrap);
@@ -84,10 +84,61 @@ export class SerializationRegistry {
             }
           });
 
+          // Normalize Mermaid diagram blocks back to semantic CodeNode HTML (<pre data-language="mermaid">)
+          dom.querySelectorAll('.mermaid-diagram-block').forEach((block) => {
+            const rawAttr = block.getAttribute('data-mermaid-code');
+            const preEl = block.querySelector('pre.mermaid, pre');
+            const source = (rawAttr ?? preEl?.textContent ?? '').trim();
+            const codePre = dom.createElement('pre');
+            codePre.setAttribute('data-language', 'mermaid');
+            codePre.setAttribute('data-highlight-language', 'mermaid');
+            codePre.textContent = source;
+            block.parentNode?.replaceChild(codePre, block);
+          });
+
+          dom.querySelectorAll('pre.mermaid').forEach((pre) => {
+            pre.classList.remove('mermaid');
+            pre.setAttribute('data-language', 'mermaid');
+            pre.setAttribute('data-highlight-language', 'mermaid');
+          });
+
+          // Ensure all <pre> code blocks carry data-language (read by @lexical/code-core $convertPreElement)
+          // and unwrap single <code> child so multiline <code> doesn't spawn a second default-language CodeNode
+          dom.querySelectorAll('pre').forEach((pre) => {
+            const codeChild = pre.children.length === 1 && pre.firstElementChild?.tagName === 'CODE'
+              ? pre.firstElementChild
+              : null;
+            let resolvedLang =
+              pre.getAttribute('data-language') ||
+              pre.getAttribute('data-highlight-language') ||
+              codeChild?.getAttribute('data-language') ||
+              '';
+
+            if (!resolvedLang) {
+              const cls = `${pre.className || ''} ${codeChild?.className || ''}`;
+              const langMatch = cls.match(/\blanguage-([a-zA-Z0-9_+-]+)/);
+              if (langMatch?.[1]) {
+                resolvedLang = langMatch[1].toLowerCase();
+              }
+            }
+
+            if (resolvedLang) {
+              pre.setAttribute('data-language', resolvedLang);
+              pre.setAttribute('data-highlight-language', resolvedLang);
+            }
+
+            if (codeChild) {
+              while (codeChild.firstChild) {
+                pre.insertBefore(codeChild.firstChild, codeChild);
+              }
+              codeChild.remove();
+            }
+          });
+
           // Strip preview chrome before importing nodes into editor
           dom
             .querySelectorAll(
-              '.uni-container-icon, [data-uni-chrome], .mermaid-header, .uni-image-resize-handle, .uni-image-spinner',
+              '.uni-container-icon, [data-uni-chrome], .mermaid-header, .mermaid-svg-container, .uni-image-resize-handle, .uni-image-spinner',
             )
             .forEach((el) => el.remove());
 

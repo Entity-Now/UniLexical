@@ -1,6 +1,6 @@
 {
   "name": "unilexical",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "Framework-agnostic, Notion-style block rich-text editor powered by Lexical",
   "type": "module",
   "main": "./dist/index.cjs",
@@ -75,6 +75,7 @@
     "@lexical/table": "0.52.0",
     "@lexical/utils": "0.52.0",
     "@types/hast": "^3.0.5",
+    "highlight.js": "^11.11.1",
     "lexical": "0.52.0",
     "lowlight": "^3.3.0",
     "motion": "^12.42.2",
